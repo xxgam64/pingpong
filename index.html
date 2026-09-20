@@ -388,30 +388,32 @@
 
         // --- THREE.JS SETUP ---
         const canvas = document.getElementById('gameCanvas');
+        
+        // Use standard antialiased renderer
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // MENGATUR ENCODING AGAR WARNA TIDAK KUSAM
+        // CRITICAL FIX: Ensure proper color handling to prevent washed out colors
         renderer.outputEncoding = THREE.sRGBEncoding;
         
-        // MENGHAPUS TONE MAPPING AGAR CAHAYA TIDAK MEMBUAT WARNA PUTIH PUDAR
+        // CRITICAL FIX: Disable tone mapping to ensure pure bright colors
         renderer.toneMapping = THREE.NoToneMapping; 
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x2a313d); 
-        scene.fog = new THREE.FogExp2(0x2a313d, 0.015);
+        scene.background = new THREE.Color(0x1e293b); 
+        scene.fog = new THREE.FogExp2(0x1e293b, 0.015);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 16, 38); 
         camera.lookAt(0, -2, 0);
 
         // PENCAHAYAAN YANG DIPERBAIKI
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Increased base light
         scene.add(ambientLight);
 
-        // Mengurangi intensitas spotlight agar tidak overexposed
-        const spotLight = new THREE.SpotLight(0xffffff, 0.6);
+        // Mengurangi intensitas spotlight agar tidak overexposed/terlalu silau
+        const spotLight = new THREE.SpotLight(0xffffff, 0.6); // Reduced intensity to prevent washout
         spotLight.position.set(0, 45, 0);
         spotLight.angle = Math.PI / 3;
         spotLight.penumbra = 0.5;
@@ -421,7 +423,7 @@
         spotLight.shadow.bias = -0.0005;
         scene.add(spotLight);
         
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3); // Reduced intensity
         fillLight.position.set(-20, 20, 20);
         scene.add(fillLight);
 
@@ -445,8 +447,8 @@
         // MATERIAL MEJA YANG DIPERBAIKI (BIRU TURNAMEN SOLID)
         const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1e40af, // Biru pekat (Tailwind blue-800)
-            roughness: 0.6,  // Tidak terlalu mengkilap agar warnanya tetap solid
+            color: 0x1d4ed8, // Pure bright blue (Tailwind blue-700)
+            roughness: 0.6,  
             metalness: 0.1
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
@@ -580,7 +582,7 @@
         // MATERIAL BOLA YANG DIPERBAIKI (KUNING/ORANYE MENYALA)
         const ballGeo = new THREE.SphereGeometry(0.35, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
-            color: 0xfde047, // Kuning cerah (Tailwind yellow-300)
+            color: 0xfde047, // Bright yellow
             roughness: 0.2,
             metalness: 0.0,
             emissive: 0x444444 // Memberikan sedikit cahaya pendar sendiri agar tidak tenggelam di bayangan
