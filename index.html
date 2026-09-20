@@ -1,326 +1,295 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ping Pong Multiplayer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rally - 3D Table Tennis Multiplayer</title>
+    
+    <!-- Fonts & Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js untuk grafis 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- PeerJS untuk koneksi Multiplayer (WebRTC) -->
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
     <style>
         body {
-            background-color: #111827; /* Tailwind gray-900 */
-            color: #f3f4f6;
-            font-family: 'Inter', sans-serif;
             margin: 0;
-            overflow: hidden; /* Mencegah scroll saat main */
-            touch-action: none; /* Mencegah zoom/scroll di HP */
-        }
-        #gameCanvas {
-            background: #1f2937; /* Tailwind gray-800 */
-            border: 2px solid #374151;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            max-width: 100%;
-            height: auto;
-            aspect-ratio: 2/1;
-            display: block;
-            margin: 0 auto;
-        }
-        .retro-text {
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f5; /* Tailwind zinc-100 */
+            color: #18181b; /* Tailwind zinc-900 */
+            touch-action: none;
         }
         
-        /* Animasi Ping */
-        @keyframes pulse-border {
-            0% { border-color: rgba(59, 130, 246, 0.5); }
-            50% { border-color: rgba(59, 130, 246, 1); }
-            100% { border-color: rgba(59, 130, 246, 0.5); }
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
-        .waiting-room {
-            animation: pulse-border 2s infinite;
+
+        /* UI Overlays */
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Biarkan klik tembus ke canvas saat main */
+        }
+        
+        /* Menu Panel harus bisa diklik */
+        .interactive-ui {
+            pointer-events: auto;
+        }
+
+        /* Glassmorphism style untuk menu */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animasi Ping */
+        @keyframes pulse-dot {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .status-dot {
+            height: 10px; width: 10px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 2s infinite;
+        }
+
+        /* Custom Input Styling */
+        input:focus {
+            outline: none;
+            border-color: #3f3f46;
+            box-shadow: 0 0 0 3px rgba(63, 63, 70, 0.1);
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
+<body>
 
-    <div id="mainContainer" class="w-full max-w-3xl relative">
+    <!-- 3D Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Layer -->
+    <div id="uiLayer" class="flex flex-col justify-between p-6 md:p-10">
         
-        <!-- UI Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-blue-400 retro-text mb-2 tracking-widest">PONG <span class="text-white">VS</span></h1>
-            <p class="text-gray-400 text-sm">WebRTC Peer-to-Peer Multiplayer</p>
-        </div>
-
-        <!-- Panel Menu -->
-        <div id="menuPanel" class="bg-gray-800 p-6 md:p-8 rounded-xl shadow-2xl border border-gray-700 mx-auto max-w-md w-full">
-            <div id="statusMessage" class="hidden bg-blue-900/50 border border-blue-500 text-blue-200 px-4 py-3 rounded mb-6 text-sm text-center">
-                Memulai...
-            </div>
-
-            <!-- Input Nama -->
-            <div class="mb-4" id="nameInputContainer">
-                <input type="text" id="playerNameInput" placeholder="Masukkan Nama Anda" class="w-full bg-gray-900 text-white border border-gray-600 rounded py-3 px-4 focus:outline-none focus:border-blue-500 text-center uppercase" autocomplete="off" maxlength="12">
-            </div>
-
-            <!-- Opsi Host / Guest -->
-            <div id="actionSelection" class="space-y-4">
-                <button onclick="hostGame()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded transition duration-200">
-                    Buat Room Baru (Host)
-                </button>
-                <div class="flex items-center justify-center space-x-2 text-gray-500 my-2">
-                    <hr class="w-1/3 border-gray-600">
-                    <span class="text-xs font-semibold uppercase">ATAU</span>
-                    <hr class="w-1/3 border-gray-600">
-                </div>
-                <div class="space-y-2">
-                    <input type="text" id="joinIdInput" placeholder="Masukkan ID Room Teman" class="w-full bg-gray-900 text-white border border-gray-600 rounded py-3 px-4 focus:outline-none focus:border-blue-500 text-center uppercase" autocomplete="off">
-                    <button onclick="joinGame()" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded transition duration-200">
-                        Gabung Room (Join)
-                    </button>
-                </div>
-            </div>
-
-            <!-- Menunggu Pemain (Hanya Host) -->
-            <div id="waitingPanel" class="hidden text-center space-y-4 waiting-room border-2 border-transparent p-6 rounded-lg bg-gray-900">
-                <p class="text-gray-300">Room ID Anda:</p>
-                <div class="bg-black p-3 rounded text-2xl font-mono text-green-400 tracking-wider select-all" id="myRoomId">
-                    ------
-                </div>
-                <p class="text-sm text-gray-400 mt-2">Bagikan ID ini ke teman Anda.</p>
-                <button onclick="copyRoomId()" class="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded transition">
-                    Salin ID
-                </button>
-                <div class="mt-4 flex justify-center">
-                    <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-                <p class="text-xs text-blue-300 mt-2">Menunggu teman bergabung...</p>
-            </div>
-        </div>
-
-        <!-- Area Game -->
-        <div id="gamePanel" class="hidden w-full">
-            <div class="flex justify-between items-center mb-2 px-2 text-sm text-gray-400 font-mono">
-                <div id="player1Label" class="font-bold">Player 1 (Host)</div>
-                <div id="roomIdDisplay" class="bg-gray-800 px-3 py-1 rounded border border-gray-700">Room: ---</div>
-                <div id="player2Label">Player 2 (Guest)</div>
-            </div>
-            
-            <div class="relative">
-                <canvas id="gameCanvas" width="800" height="400"></canvas>
-                
-                <!-- Game Over Overlay -->
-                <div id="gameOverOverlay" class="absolute inset-0 bg-black/80 hidden flex-col items-center justify-center rounded-lg">
-                    <h2 id="winnerText" class="text-4xl md:text-5xl font-bold text-yellow-400 mb-4 retro-text">PLAYER WINS!</h2>
-                    <button onclick="resetGame()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition duration-200">
-                        Main Lagi
-                    </button>
+        <!-- Header In-Game (Awalnya Sembunyi) -->
+        <div id="inGameHeader" class="hidden flex justify-between items-start w-full max-w-6xl mx-auto">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-red-500 shadow-lg flex items-center justify-center text-white font-bold" id="p1Avatar">P1</div>
+                <div>
+                    <h2 id="p1NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-zinc-800">HOST</h2>
+                    <p class="text-xs text-zinc-500 font-semibold" id="roomDisplay">Room: ----</p>
                 </div>
             </div>
             
-            <div class="mt-4 text-center text-gray-500 text-xs">
-                Gunakan Mouse (geser atas/bawah) atau Layar Sentuh untuk menggerakkan paddle.
+            <!-- Score Board (Tengah) -->
+            <div class="flex flex-col items-center">
+                <p class="text-xs font-bold tracking-widest text-zinc-400 mb-1">MATCH SCORE</p>
+                <div class="flex items-baseline space-x-4">
+                    <span id="scoreP1" class="text-5xl md:text-6xl font-extrabold text-zinc-800">00</span>
+                    <span class="text-2xl text-zinc-300">-</span>
+                    <span id="scoreP2" class="text-5xl md:text-6xl font-extrabold text-zinc-800">00</span>
+                </div>
+                <div id="gameStatusText" class="mt-2 px-3 py-1 bg-white/50 rounded-full text-xs font-bold text-zinc-600 shadow-sm backdrop-blur-sm">
+                    WAITING TO SERVE
+                </div>
             </div>
-            <button onclick="disconnectGame()" class="mt-4 block mx-auto text-red-400 hover:text-red-300 text-sm">
-                Keluar Game
+
+            <div class="flex items-center space-x-3 text-right">
+                <div>
+                    <h2 id="p2NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-zinc-800">GUEST</h2>
+                    <p class="text-xs text-zinc-500 font-semibold flex items-center justify-end space-x-1">
+                        <span>Connected</span>
+                        <span class="status-dot"></span>
+                    </p>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center text-white font-bold" id="p2Avatar">P2</div>
+            </div>
+        </div>
+
+        <!-- Main Menu Panel -->
+        <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0">
+            <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-md w-full mx-4 relative overflow-hidden">
+                <!-- Dekorasi UI -->
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-red-400 rounded-full opacity-10 blur-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
+
+                <div class="text-center mb-8 relative z-10">
+                    <h1 class="text-4xl font-extrabold tracking-tighter text-zinc-900 mb-1">RALLY <span class="text-red-500">3D</span></h1>
+                    <p class="text-sm font-medium text-zinc-500 tracking-widest uppercase">The Everyday Club</p>
+                </div>
+
+                <div id="alertBox" class="hidden mb-6 p-3 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm font-medium text-center">
+                    Alert Message Here
+                </div>
+
+                <!-- Input Setup -->
+                <div id="setupSection" class="space-y-5 relative z-10">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Player Name</label>
+                        <input type="text" id="playerName" placeholder="Enter your name" class="w-full bg-white/80 border-2 border-zinc-200 rounded-xl px-4 py-3 text-zinc-800 font-semibold transition-all" maxlength="10">
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button onclick="hostGame()" class="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95">
+                            CREATE ROOM (HOST)
+                        </button>
+                        
+                        <div class="relative flex items-center py-2">
+                            <div class="flex-grow border-t border-zinc-300"></div>
+                            <span class="flex-shrink-0 mx-4 text-zinc-400 text-xs font-bold uppercase tracking-wider">OR</span>
+                            <div class="flex-grow border-t border-zinc-300"></div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <input type="text" id="joinId" placeholder="Paste Room ID" class="w-2/3 bg-white/80 border-2 border-zinc-200 rounded-xl px-4 py-3 text-zinc-800 font-mono text-sm transition-all uppercase">
+                            <button onclick="joinGame()" class="w-1/3 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95">
+                                JOIN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Waiting Room (Host Only) -->
+                <div id="waitingSection" class="hidden text-center space-y-6 relative z-10 py-4">
+                    <div>
+                        <p class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Your Room ID</p>
+                        <div class="bg-zinc-100 border-2 border-zinc-200 p-4 rounded-xl flex items-center justify-between">
+                            <span id="displayRoomId" class="font-mono text-lg font-bold text-zinc-800 tracking-wider">Loading...</span>
+                            <button onclick="copyId()" id="copyBtn" class="bg-white border border-zinc-200 shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                                COPY
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center space-y-3">
+                        <div class="w-8 h-8 border-4 border-zinc-200 border-t-red-500 rounded-full animate-spin"></div>
+                        <p class="text-sm font-medium text-zinc-500">Waiting for opponent...</p>
+                    </div>
+                    <button onclick="cancelMatch()" class="text-xs font-bold text-zinc-400 hover:text-red-500 uppercase tracking-wider">Cancel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Game Over UI -->
+        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-white/80 backdrop-blur-md">
+            <h2 class="text-6xl font-black text-zinc-900 mb-2 uppercase tracking-tighter" id="winnerText">WINNER</h2>
+            <p class="text-lg font-bold text-zinc-500 mb-8 tracking-widest">WINS THE MATCH</p>
+            <button onclick="restartMatch()" class="bg-red-500 hover:bg-red-600 text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-red-500/30 transition-transform transform hover:scale-105">
+                PLAY AGAIN
             </button>
+        </div>
+        
+        <!-- Footer Info -->
+        <div class="absolute bottom-4 left-0 w-full text-center pointer-events-none">
+            <p class="text-xs font-semibold text-zinc-400 tracking-widest">MOVE MOUSE TO PLAY • CLICK TO SERVE</p>
         </div>
     </div>
 
+    <!-- MAIN LOGIC (Three.js + PeerJS) -->
     <script>
-        // -- KONFIGURASI JARINGAN (PeerJS) --
+        // -- UI Elements --
+        const menuPanel = document.getElementById('menuPanel');
+        const setupSection = document.getElementById('setupSection');
+        const waitingSection = document.getElementById('waitingSection');
+        const inGameHeader = document.getElementById('inGameHeader');
+        const gameOverPanel = document.getElementById('gameOverPanel');
+        const alertBox = document.getElementById('alertBox');
+        
+        // -- Game Variables --
+        let isHost = false;
+        let myName = localStorage.getItem('rally_name') || 'Player';
+        document.getElementById('playerName').value = myName;
+        
         let peer = null;
         let conn = null;
-        let isHost = false;
-        let myId = '';
-        let myName = 'Player';
+        let gameActive = false;
+        let lastTime = 0;
+        let mouseX = 0;
+        let mouseY = 0;
 
-        // -- KONFIGURASI AUDIO (Tone.js) --
-        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-        
-        function playSound(type) {
-            if (Tone.context.state !== 'running') Tone.context.resume();
-            
-            if (type === 'hit') {
-                synth.triggerAttackRelease("C5", "16n");
-            } else if (type === 'wall') {
-                synth.triggerAttackRelease("G4", "16n");
-            } else if (type === 'score') {
-                synth.triggerAttackRelease(["E4", "G4", "C5"], "8n");
-            } else if (type === 'win') {
-                synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "2n");
-            }
-        }
-
-        // -- KONFIGURASI GAME --
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Ukuran logis game (akan di-scale otomatis oleh CSS aspect-ratio)
-        const GAME_WIDTH = 800;
-        const GAME_HEIGHT = 400;
-        const WIN_SCORE = 11; // Skor untuk menang
-        
-        // State Game (Host punya otoritas penuh atas bola dan skor)
-        let gameState = {
-            status: 'waiting', // waiting, playing, gameover
-            p1: { y: GAME_HEIGHT / 2 - 40, score: 0, name: 'Host' },
-            p2: { y: GAME_HEIGHT / 2 - 40, score: 0, name: 'Guest' },
-            ball: { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, vx: 5, vy: 5, radius: 8 },
+        // Game State (Diatur oleh Host)
+        let state = {
+            status: 'menu', // menu, serve, rally, gameover
+            score: { p1: 0, p2: 0 },
+            server: 'p1', // siapa yang servis
+            ball: { x: 0, y: 1.5, z: 0, vx: 0, vy: 0, vz: 0 },
+            p1: { x: 0, y: 1 }, // Host (Red)
+            p2: { x: 0, y: 1 }, // Guest (Blue)
             winner: null
         };
 
-        const PADDLE_WIDTH = 12;
-        const PADDLE_HEIGHT = 80;
-        const PADDLE_PADDING = 20; // Jarak dari pinggir
-
-        let animationFrameId;
-        let lastTime = 0;
-        const FPS = 60;
-        const TICK_RATE = 1000 / FPS;
-
-        // -- ELEMEN UI --
-        const menuPanel = document.getElementById('menuPanel');
-        const actionSelection = document.getElementById('actionSelection');
-        const waitingPanel = document.getElementById('waitingPanel');
-        const gamePanel = document.getElementById('gamePanel');
-        const statusMessage = document.getElementById('statusMessage');
-        const nameInputContainer = document.getElementById('nameInputContainer');
-        const playerNameInput = document.getElementById('playerNameInput');
-        const joinIdInput = document.getElementById('joinIdInput');
-        const myRoomIdEl = document.getElementById('myRoomId');
-        const roomIdDisplay = document.getElementById('roomIdDisplay');
-        const gameOverOverlay = document.getElementById('gameOverOverlay');
-        const winnerText = document.getElementById('winnerText');
-
-        // Coba load nama dari localstorage
-        const savedName = localStorage.getItem('pong_player_name');
-        if (savedName) playerNameInput.value = savedName;
-
-        function showStatus(msg, isError = false) {
-            statusMessage.textContent = msg;
-            statusMessage.style.display = 'block';
-            if (isError) {
-                statusMessage.className = 'bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded mb-6 text-sm text-center';
-            } else {
-                statusMessage.className = 'bg-blue-900/50 border border-blue-500 text-blue-200 px-4 py-3 rounded mb-6 text-sm text-center';
-            }
+        const MAX_SCORE = 11;
+        const TABLE_WIDTH = 15;
+        const TABLE_LENGTH = 27;
+        const TABLE_HEIGHT = 7.6; // Ketinggian meja dari lantai
+        
+        function showAlert(msg) {
+            alertBox.textContent = msg;
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 3000);
         }
 
-        function copyRoomId() {
-            navigator.clipboard.writeText(myId).then(() => {
-                const btn = document.querySelector('button[onclick="copyRoomId()"]');
-                const originalText = btn.innerText;
-                btn.innerText = 'Tersalin!';
-                btn.classList.replace('bg-gray-700', 'bg-green-600');
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.replace('bg-green-600', 'bg-gray-700');
-                }, 2000);
-            }).catch(() => {
-                showStatus("Gagal menyalin. Silakan blok dan salin manual.", true);
-            });
-        }
-
-        function showGameScreen() {
-            menuPanel.classList.add('hidden');
-            gamePanel.classList.remove('hidden');
-            roomIdDisplay.textContent = `Room: ${isHost ? myId : conn.peer}`;
-            
-            document.getElementById('player1Label').textContent = gameState.p1.name;
-            document.getElementById('player2Label').textContent = gameState.p2.name;
-
-            if(isHost) {
-                document.getElementById('player1Label').classList.add('text-green-400');
-                document.getElementById('player2Label').classList.remove('text-green-400');
-            } else {
-                document.getElementById('player2Label').classList.add('text-green-400');
-                document.getElementById('player1Label').classList.remove('text-green-400');
-            }
-        }
-
-        function showMenuScreen() {
-            menuPanel.classList.remove('hidden');
-            gamePanel.classList.add('hidden');
-            actionSelection.classList.remove('hidden');
-            nameInputContainer.classList.remove('hidden');
-            waitingPanel.classList.add('hidden');
-            gameOverOverlay.classList.add('hidden');
-            gameOverOverlay.classList.remove('flex');
-            statusMessage.style.display = 'none';
-        }
-
-        // Fungsi untuk menginisialisasi Peer
-        function initPeer(callback) {
+        function initNetwork(callback) {
             if (peer) peer.destroy();
+            peer = new Peer(null, { debug: 2 });
             
-            showStatus("Menghubungkan ke server publik...");
-            // Menggunakan PeerJS Cloud Server gratis
-            peer = new Peer(null, {
-                debug: 2
-            });
-
             peer.on('open', (id) => {
-                myId = id;
-                callback();
+                callback(id);
             });
-
             peer.on('error', (err) => {
-                console.error(err);
-                showStatus("Error jaringan: " + err.type, true);
+                showAlert("Network Error: " + err.type);
+                cancelMatch();
             });
         }
 
-        // --- HOST LOGIC ---
         function hostGame() {
-            myName = playerNameInput.value.trim() || 'Host';
-            localStorage.setItem('pong_player_name', myName);
-            gameState.p1.name = myName;
-
+            myName = document.getElementById('playerName').value.trim() || 'Host';
+            localStorage.setItem('rally_name', myName);
             isHost = true;
-            actionSelection.classList.add('hidden');
-            nameInputContainer.classList.add('hidden');
             
-            Tone.start(); // Inisialisasi Audio
+            setupSection.classList.add('hidden');
+            waitingSection.classList.remove('hidden');
             
-            initPeer(() => {
-                showStatus("Room dibuat! Tunggu teman bergabung.");
-                myRoomIdEl.textContent = myId;
-                waitingPanel.classList.remove('hidden');
-
-                // Menunggu koneksi masuk
+            initNetwork((id) => {
+                document.getElementById('displayRoomId').textContent = id;
+                
                 peer.on('connection', (connection) => {
-                    if (conn) {
-                        connection.close(); // Hanya izinkan 1 teman
-                        return;
-                    }
-                    
+                    if (conn) { connection.close(); return; }
                     conn = connection;
                     setupConnection();
                 });
             });
         }
 
-        // --- GUEST LOGIC ---
         function joinGame() {
-            const hostId = joinIdInput.value.trim();
-            if (!hostId) {
-                showStatus("Masukkan ID Room terlebih dahulu!", true);
-                return;
-            }
-
-            myName = playerNameInput.value.trim() || 'Guest';
-            localStorage.setItem('pong_player_name', myName);
-
+            const hostId = document.getElementById('joinId').value.trim();
+            if (!hostId) { showAlert("Please enter Room ID"); return; }
+            
+            myName = document.getElementById('playerName').value.trim() || 'Guest';
+            localStorage.setItem('rally_name', myName);
             isHost = false;
-            actionSelection.classList.add('hidden');
-            nameInputContainer.classList.add('hidden');
             
-            Tone.start(); // Inisialisasi Audio
+            setupSection.classList.add('hidden');
             
-            initPeer(() => {
-                showStatus("Menghubungkan ke Host...");
+            initNetwork((id) => {
                 conn = peer.connect(hostId, { reliable: true });
                 setupConnection();
             });
@@ -328,318 +297,478 @@
 
         function setupConnection() {
             conn.on('open', () => {
-                showStatus("Terhubung! Memulai game...");
-                
-                // Jika guest, kirim nama ke host
-                if (!isHost) {
-                    conn.send({ type: 'setName', name: myName });
-                }
-
-                setTimeout(startGame, 1000);
+                // Send Name
+                conn.send({ type: 'init', name: myName });
+                startGameUI();
             });
 
             conn.on('data', (data) => {
                 if (isHost) {
-                    // Host menerima posisi paddle P2 dari Guest
+                    if (data.type === 'init') {
+                        document.getElementById('p2NameLabel').textContent = data.name;
+                        document.getElementById('p2Avatar').textContent = data.name.charAt(0).toUpperCase();
+                        resetGame(); // Mulai game
+                    }
                     if (data.type === 'paddleUpdate') {
-                        gameState.p2.y = data.y;
+                        state.p2.x = data.x;
+                        state.p2.y = data.y;
                     }
-                    if (data.type === 'setName') {
-                        gameState.p2.name = data.name;
-                        document.getElementById('player2Label').textContent = data.name;
-                    }
-                    if (data.type === 'requestReset') {
-                        resetGameHost();
+                    if (data.type === 'serveRequest' && state.status === 'serve' && state.server === 'p2') {
+                        executeServe();
                     }
                 } else {
-                    // Guest menerima seluruh state game dari Host
-                    if (data.type === 'gameStateUpdate') {
-                        const prevStatus = gameState.status;
-                        const prevScore1 = gameState.p1.score;
-                        const prevScore2 = gameState.p2.score;
-
-                        gameState = data.state;
-
-                        document.getElementById('player1Label').textContent = gameState.p1.name;
-                        document.getElementById('player2Label').textContent = gameState.p2.name;
-
-                        // Cek gameover status
-                        if (gameState.status === 'gameover' && prevStatus !== 'gameover') {
-                            showGameOverOverlay();
-                            playSound('win');
-                        } else if (gameState.status === 'playing' && prevStatus === 'gameover') {
-                            gameOverOverlay.classList.add('hidden');
-                            gameOverOverlay.classList.remove('flex');
-                        } else if (gameState.status === 'playing' && (gameState.p1.score > prevScore1 || gameState.p2.score > prevScore2)) {
-                            playSound('score');
-                        }
+                    if (data.type === 'init') {
+                        document.getElementById('p1NameLabel').textContent = data.name;
+                        document.getElementById('p1Avatar').textContent = data.name.charAt(0).toUpperCase();
                     }
-                    if (data.type === 'playSound') {
-                        playSound(data.soundType);
+                    if (data.type === 'stateUpdate') {
+                        syncState(data.state);
                     }
                 }
             });
 
             conn.on('close', () => {
-                handleDisconnect();
+                showAlert("Opponent disconnected.");
+                cancelMatch();
             });
         }
 
-        function disconnectGame() {
+        function copyId() {
+            const id = document.getElementById('displayRoomId').textContent;
+            navigator.clipboard.writeText(id).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'COPIED';
+                setTimeout(() => btn.textContent = 'COPY', 2000);
+            });
+        }
+
+        function cancelMatch() {
             if (conn) conn.close();
             if (peer) peer.destroy();
-            cancelAnimationFrame(animationFrameId);
-            showMenuScreen();
-            showStatus("Kamu telah keluar dari game.", false);
+            setupSection.classList.remove('hidden');
+            waitingSection.classList.add('hidden');
+            menuPanel.classList.remove('hidden');
+            inGameHeader.classList.add('hidden');
+            gameOverPanel.classList.add('hidden');
+            gameActive = false;
         }
 
-        function handleDisconnect() {
-            cancelAnimationFrame(animationFrameId);
-            conn = null;
-            showMenuScreen();
-            showStatus("Pemain lain terputus atau keluar dari room.", true);
+        function startGameUI() {
+            menuPanel.classList.add('hidden');
+            inGameHeader.classList.remove('hidden');
+            
+            // Set own info
+            if (isHost) {
+                document.getElementById('p1NameLabel').textContent = myName;
+                document.getElementById('p1Avatar').textContent = myName.charAt(0).toUpperCase();
+                document.getElementById('roomDisplay').textContent = "Room: " + peer.id;
+            } else {
+                document.getElementById('p2NameLabel').textContent = myName;
+                document.getElementById('p2Avatar').textContent = myName.charAt(0).toUpperCase();
+                document.getElementById('roomDisplay').textContent = "Connected";
+            }
+            
+            gameActive = true;
+            resizeCanvas(); // Ensure 3D is sized correctly
         }
 
-        // Menangani input Mouse & Touch untuk paddle
-        function getCanvasMouseY(e) {
-            const rect = canvas.getBoundingClientRect();
-            // Kalkulasi posisi Y yang tepat meskipun canvas di-scale oleh CSS
+        const canvas = document.getElementById('gameCanvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Shadow yang lembut
+
+        const scene = new THREE.Scene();
+        // Background color (sama dengan CSS body)
+        scene.background = new THREE.Color('#f4f4f5'); 
+
+        // Kamera: Sudut pandang persis seperti video (dari belakang Host, sedikit di atas meja)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 30); 
+        camera.lookAt(0, 0, 0);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(10, 25, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -20;
+        dirLight.shadow.camera.right = 20;
+        dirLight.shadow.camera.top = 20;
+        dirLight.shadow.camera.bottom = -20;
+        scene.add(dirLight);
+
+        const objects = {};
+
+        // 1. Lantai (Hanya untuk menerima bayangan agar terlihat grounded)
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.ShadowMaterial({ opacity: 0.1 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -TABLE_HEIGHT; // Lantai ada di bawah meja
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // 2. Meja (Dark Green, Aesthetic)
+        const tableGroup = new THREE.Group();
+        
+        // Permukaan Meja
+        const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
+        const tableTopMat = new THREE.MeshStandardMaterial({ 
+            color: '#2d6a4f', // Aesthetic dark green
+            roughness: 0.4,
+            metalness: 0.1
+        });
+        const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
+        tableTop.receiveShadow = true;
+        tableTop.castShadow = true;
+        tableGroup.add(tableTop);
+
+        // Garis Putih (Tengah, Pinggir)
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, TABLE_LENGTH), lineMat);
+        centerLine.rotation.x = -Math.PI / 2;
+        centerLine.position.y = 0.26; // Sedikit di atas meja
+        tableGroup.add(centerLine);
+
+        const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.4, 0.6, TABLE_LENGTH + 0.4);
+        const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const tableBorder = new THREE.Mesh(borderGeo, borderMat);
+        tableBorder.position.y = -0.05;
+        tableGroup.add(tableBorder);
+
+        // Net
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1, 1.5);
+        const netMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            transparent: true, 
+            opacity: 0.4, 
+            side: THREE.DoubleSide,
+            wireframe: true // Efek jaring
+        });
+        const net = new THREE.Mesh(netGeo, netMat);
+        net.position.y = 1;
+        tableGroup.add(net);
+
+        scene.add(tableGroup);
+
+        // 3. Paddles (Raket bentuk bundar)
+        function createPaddle(colorHex) {
+            const group = new THREE.Group();
+            
+            // Karet raket (Silinder dipipihkan)
+            const padGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.3, 32);
+            const padMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.7 });
+            const pad = new THREE.Mesh(padGeo, padMat);
+            pad.rotation.x = Math.PI / 2; // Berdirikan
+            pad.castShadow = true;
+            group.add(pad);
+
+            // Gagang Kayu
+            const handleGeo = new THREE.BoxGeometry(0.6, 2, 0.4);
+            const handleMat = new THREE.MeshStandardMaterial({ color: '#d4a373' });
+            const handle = new THREE.Mesh(handleGeo, handleMat);
+            handle.position.y = -2;
+            handle.castShadow = true;
+            group.add(handle);
+
+            return group;
+        }
+
+        objects.p1 = createPaddle('#ef4444'); // Red (Host)
+        objects.p1.position.z = TABLE_LENGTH / 2 + 1;
+        scene.add(objects.p1);
+
+        objects.p2 = createPaddle('#1e293b'); // Dark Slate (Guest)
+        objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
+        scene.add(objects.p2);
+
+        // 4. Bola
+        const ballGeo = new THREE.SphereGeometry(0.3, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.2 });
+        objects.ball = new THREE.Mesh(ballGeo, ballMat);
+        objects.ball.castShadow = true;
+        scene.add(objects.ball);
+
+        // Mapping koordinat layar ke koordinat bidang raket 3D
+        function updateMousePos(e) {
+            if (!gameActive) return;
+            
+            // Normalized Device Coordinates (-1 to +1)
+            let clientX = e.clientX;
             let clientY = e.clientY;
-            if(e.touches && e.touches.length > 0) {
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
                 clientY = e.touches[0].clientY;
             }
-            const scaleY = canvas.height / rect.height;
-            let y = (clientY - rect.top) * scaleY;
-            return y - (PADDLE_HEIGHT / 2); // Center paddle di mouse
-        }
 
-        function updateMyPaddle(e) {
-            if (gameState.status !== 'playing') return;
-            
-            let newY = getCanvasMouseY(e);
-            
-            // Batasi agar paddle tidak keluar dari layar
-            if (newY < 0) newY = 0;
-            if (newY + PADDLE_HEIGHT > GAME_HEIGHT) newY = GAME_HEIGHT - PADDLE_HEIGHT;
+            // Map layar X ke pergerakan Meja X (-8 to +8)
+            const targetX = ((clientX / window.innerWidth) * 2 - 1) * 10;
+            // Map layar Y ke pergerakan Ketinggian Y (1 to 6)
+            const targetY = (-(clientY / window.innerHeight) * 2 + 1) * 4 + 3;
 
             if (isHost) {
-                gameState.p1.y = newY;
+                state.p1.x = targetX;
+                state.p1.y = targetY;
             } else {
-                gameState.p2.y = newY;
-                // Guest mengirim posisinya ke Host
-                if(conn && conn.open) {
-                    conn.send({ type: 'paddleUpdate', y: newY });
+                state.p2.x = -targetX; // Guest melihat dari sisi berlawanan, invers X
+                state.p2.y = targetY;
+                // Kirim posisi ke host
+                if (conn && conn.open) {
+                    conn.send({ type: 'paddleUpdate', x: state.p2.x, y: state.p2.y });
                 }
             }
         }
 
-        // Listener untuk pergerakan
-        canvas.addEventListener('mousemove', updateMyPaddle);
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); // Mencegah scrolling halaman saat main
-            updateMyPaddle(e);
-        }, { passive: false });
-
-        function showGameOverOverlay() {
-            if (gameState.winner === 'p1') {
-                winnerText.textContent = `${gameState.p1.name} WINS!`;
-                winnerText.className = 'text-4xl md:text-5xl font-bold text-blue-400 mb-4 retro-text uppercase text-center';
-            } else {
-                winnerText.textContent = `${gameState.p2.name} WINS!`;
-                winnerText.className = 'text-4xl md:text-5xl font-bold text-red-400 mb-4 retro-text uppercase text-center';
+        window.addEventListener('mousemove', updateMousePos);
+        window.addEventListener('touchmove', updateMousePos, {passive: false});
+        
+        // Serve Action
+        window.addEventListener('pointerdown', () => {
+            if (!gameActive || state.status !== 'serve') return;
+            
+            if (isHost && state.server === 'p1') {
+                executeServe();
+            } else if (!isHost && state.server === 'p2') {
+                if (conn && conn.open) conn.send({ type: 'serveRequest' });
             }
-            gameOverOverlay.classList.remove('hidden');
-            gameOverOverlay.classList.add('flex');
-        }
+        });
+
+        const GRAVITY = 0.015;
+        let rallyCount = 0;
 
         function resetGame() {
-            if (isHost) {
-                resetGameHost();
-            } else {
-                if (conn && conn.open) {
-                    conn.send({ type: 'requestReset' });
-                }
-            }
-        }
-        
-        function resetGameHost() {
-            gameState.p1.score = 0;
-            gameState.p2.score = 0;
-            gameState.status = 'playing';
-            gameState.winner = null;
-            gameOverOverlay.classList.add('hidden');
-            gameOverOverlay.classList.remove('flex');
-            resetBall();
+            state.score = { p1: 0, p2: 0 };
+            state.server = 'p1';
+            state.winner = null;
+            gameOverPanel.classList.add('hidden');
+            setupServe();
         }
 
-        function resetBall() {
-            gameState.ball.x = GAME_WIDTH / 2;
-            gameState.ball.y = GAME_HEIGHT / 2;
-            // Arah random awal, pastikan tidak terlalu vertikal
-            const angle = (Math.random() * Math.PI / 4) - (Math.PI / 8); 
-            // Acak arah kiri/kanan
-            const dirX = Math.random() > 0.5 ? 1 : -1;
+        function restartMatch() {
+            if (isHost) {
+                resetGame();
+            } else {
+                showAlert("Waiting for Host to restart...");
+            }
+        }
+
+        function setupServe() {
+            state.status = 'serve';
+            state.ball.vx = 0;
+            state.ball.vy = 0;
+            state.ball.vz = 0;
+            rallyCount = 0;
             
-            const speed = 7;
-            gameState.ball.vx = Math.cos(angle) * speed * dirX;
-            gameState.ball.vy = Math.sin(angle) * speed;
+            // Tempatkan bola melayang di atas meja pihak yang serve
+            state.ball.x = 0;
+            state.ball.y = 2;
+            state.ball.z = state.server === 'p1' ? (TABLE_LENGTH / 2 - 2) : -(TABLE_LENGTH / 2 - 2);
+            
+            updateStatusUI();
+        }
+
+        function executeServe() {
+            state.status = 'rally';
+            // Pukulan Serve awal melengkung ke atas
+            state.ball.vy = 0.3; 
+            // Arah ke lawan
+            state.ball.vz = state.server === 'p1' ? -0.4 : 0.4;
+            // Sedikit menyamping acak
+            state.ball.vx = (Math.random() - 0.5) * 0.2; 
+            
+            updateStatusUI();
+        }
+
+        function updateStatusUI() {
+            const statusEl = document.getElementById('gameStatusText');
+            if (state.status === 'serve') {
+                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR TURN TO SERVE (CLICK)" : "WAITING FOR OPPONENT TO SERVE";
+                statusEl.classList.replace('text-green-600', 'text-zinc-600');
+            } else if (state.status === 'rally') {
+                statusEl.textContent = `RALLY: ${rallyCount}`;
+                statusEl.classList.replace('text-zinc-600', 'text-green-600');
+            }
         }
 
         function updatePhysics() {
-            // HANYA HOST YANG MENGHITUNG FISIKA (Otoritas Server)
-            if (!isHost || gameState.status !== 'playing') return;
+            if (!isHost || state.status !== 'rally') return;
 
-            const ball = gameState.ball;
-            ball.x += ball.vx;
-            ball.y += ball.vy;
+            const b = state.ball;
+            b.x += b.vx;
+            b.y += b.vy;
+            b.z += b.vz;
 
-            // Pantulan Atas & Bawah
-            if (ball.y - ball.radius <= 0) {
-                ball.y = ball.radius;
-                ball.vy = Math.abs(ball.vy);
-                playSound('wall');
-                if(conn && conn.open) conn.send({ type: 'playSound', soundType: 'wall' });
-            } else if (ball.y + ball.radius >= GAME_HEIGHT) {
-                ball.y = GAME_HEIGHT - ball.radius;
-                ball.vy = -Math.abs(ball.vy);
-                playSound('wall');
-                if(conn && conn.open) conn.send({ type: 'playSound', soundType: 'wall' });
-            }
+            b.vy -= GRAVITY; // Terapkan gravitasi
 
-            // Area paddle
-            const p1 = gameState.p1;
-            const p2 = gameState.p2;
-
-            // Logika Tabrakan Paddle 1 (Kiri)
-            if (ball.x - ball.radius <= PADDLE_PADDING + PADDLE_WIDTH && 
-                ball.x - ball.radius > PADDLE_PADDING) {
-                if (ball.y >= p1.y && ball.y <= p1.y + PADDLE_HEIGHT) {
-                    ball.vx = Math.abs(ball.vx) + 0.5; // Tambah speed dikit
-                    // Efek spin berdasarkan bagian mana dari paddle yang kena
-                    let hitPoint = (ball.y - (p1.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
-                    ball.vy = hitPoint * 7; 
-                    ball.x = PADDLE_PADDING + PADDLE_WIDTH + ball.radius; // hindari nyangkut
-                    playSound('hit');
-                    if(conn && conn.open) conn.send({ type: 'playSound', soundType: 'hit' });
+            // 1. Pantulan Meja (Y-axis)
+            if (b.y <= 0.55 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+                if (b.vy < 0) {
+                    b.vy = Math.abs(b.vy) * 0.85; // Bounciness
+                    b.y = 0.55;
                 }
             }
 
-            // Logika Tabrakan Paddle 2 (Kanan)
-            if (ball.x + ball.radius >= GAME_WIDTH - PADDLE_PADDING - PADDLE_WIDTH && 
-                ball.x + ball.radius < GAME_WIDTH - PADDLE_PADDING) {
-                if (ball.y >= p2.y && ball.y <= p2.y + PADDLE_HEIGHT) {
-                    ball.vx = -Math.abs(ball.vx) - 0.5;
-                    let hitPoint = (ball.y - (p2.y + PADDLE_HEIGHT / 2)) / (PADDLE_HEIGHT / 2);
-                    ball.vy = hitPoint * 7;
-                    ball.x = GAME_WIDTH - PADDLE_PADDING - PADDLE_WIDTH - ball.radius;
-                    playSound('hit');
-                    if(conn && conn.open) conn.send({ type: 'playSound', soundType: 'hit' });
+            // 2. Tabrakan Net (Z = 0)
+            if (Math.abs(b.z) < 0.5 && b.y < 2 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
+                b.vz = -b.vz * 0.5; // Membentur net
+            }
+
+            // 3. Tabrakan Paddle 1 (Host - Z positif)
+            // Cek apakah bola mendekati area Z paddle host
+            if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.5 && b.vz > 0) {
+                // Hitbox silinder sederhana: Cek jarak X dan Y bola ke pusat paddle
+                const dx = b.x - state.p1.x;
+                const dy = b.y - state.p1.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 2.5) { // Radius paddle + toleransi
+                    b.vz = -(0.5 + (rallyCount * 0.02)); // Balik arah dengan speed bertambah
+                    b.vy = 0.35 + (state.p1.y - b.y) * 0.1; // Efek pantulan atas berdasarkan posisi pukul
+                    b.vx = -dx * 0.15; // Efek samping
+                    rallyCount++;
+                    updateStatusUI();
                 }
             }
 
-            // Cek Skor (Bola keluar layar)
-            if (ball.x < 0) {
-                gameState.p2.score++;
-                checkWin();
-                if (gameState.status === 'playing') resetBall();
-            } else if (ball.x > GAME_WIDTH) {
-                gameState.p1.score++;
-                checkWin();
-                if (gameState.status === 'playing') resetBall();
+            // 4. Tabrakan Paddle 2 (Guest - Z negatif)
+            if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.5 && b.vz < 0) {
+                const dx = b.x - state.p2.x;
+                const dy = b.y - state.p2.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 2.5) {
+                    b.vz = 0.5 + (rallyCount * 0.02);
+                    b.vy = 0.35 + (state.p2.y - b.y) * 0.1;
+                    b.vx = -dx * 0.15;
+                    rallyCount++;
+                    updateStatusUI();
+                }
             }
 
-            // Host mengirimkan state game ke Guest secara real-time
+            // 5. Cek Point (Bola jatuh dari meja)
+            if (b.y < -3) {
+                if (b.z > 0) {
+                    // Jatuh di sisi P1, P2 dapet poin
+                    state.score.p2++;
+                    state.server = 'p2'; // Yang menang poin servis
+                } else {
+                    // Jatuh di sisi P2, P1 dapet poin
+                    state.score.p1++;
+                    state.server = 'p1';
+                }
+                
+                checkWinCondition();
+            }
+
+            // Kirim State ke Guest
             if (conn && conn.open) {
-                conn.send({ type: 'gameStateUpdate', state: gameState });
+                // Untuk guest, kita inversi orientasi agar dia merasa bermain dari sisi kemeranya
+                conn.send({ type: 'stateUpdate', state: state });
             }
         }
-        
-        function checkWin() {
-            if (gameState.p1.score >= WIN_SCORE) {
-                gameState.status = 'gameover';
-                gameState.winner = 'p1';
-                playSound('win');
-                showGameOverOverlay();
-            } else if (gameState.p2.score >= WIN_SCORE) {
-                gameState.status = 'gameover';
-                gameState.winner = 'p2';
-                playSound('win');
-                showGameOverOverlay();
+
+        function checkWinCondition() {
+            if (state.score.p1 >= MAX_SCORE) {
+                state.status = 'gameover';
+                state.winner = 'p1';
+            } else if (state.score.p2 >= MAX_SCORE) {
+                state.status = 'gameover';
+                state.winner = 'p2';
             } else {
-                playSound('score');
+                setupServe();
+            }
+            updateScoreUI();
+        }
+
+        function syncState(newState) {
+            const oldStatus = state.status;
+            state = newState;
+            updateScoreUI();
+            
+            if (oldStatus !== state.status) {
+                updateStatusUI();
             }
         }
 
-        function drawRect(x, y, w, h, color) {
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, w, h);
-        }
+        function updateScoreUI() {
+            // Jika host, P1 adalah diri sendiri (kiri). Jika guest, diri sendiri (P2) tetep taruh kiri layar?
+            // Biasanya tampilan skor tetep Host (Kiri) - Guest (Kanan) untuk konsistensi.
+            document.getElementById('scoreP1').textContent = String(state.score.p1).padStart(2, '0');
+            document.getElementById('scoreP2').textContent = String(state.score.p2).padStart(2, '0');
 
-        function drawCircle(x, y, r, color) {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI*2, false);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawNet() {
-            ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-            const dashHeight = 10;
-            const gap = 15;
-            for(let i = 0; i < GAME_HEIGHT; i += dashHeight + gap) {
-                ctx.fillRect(GAME_WIDTH/2 - 1, i, 2, dashHeight);
+            if (state.status === 'gameover') {
+                const wText = document.getElementById('winnerText');
+                if (state.winner === 'p1') {
+                    wText.textContent = document.getElementById('p1NameLabel').textContent;
+                    wText.className = "text-6xl font-black text-red-500 mb-2 uppercase tracking-tighter";
+                } else {
+                    wText.textContent = document.getElementById('p2NameLabel').textContent;
+                    wText.className = "text-6xl font-black text-slate-800 mb-2 uppercase tracking-tighter";
+                }
+                gameOverPanel.classList.remove('hidden');
+            } else {
+                gameOverPanel.classList.add('hidden');
             }
         }
 
-        function drawText(text, x, y, size, align="center") {
-            ctx.fillStyle = "white";
-            ctx.font = `bold ${size}px 'Courier New', monospace`;
-            ctx.textAlign = align;
-            ctx.fillText(text, x, y);
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function renderVisuals() {
+            // Update Paddle 1
+            // Smooth movement (lerp)
+            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.2;
+            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.2;
+            
+            // Rotasi paddle menyesuaikan posisi X agar terlihat dinamis
+            objects.p1.rotation.y = -objects.p1.position.x * 0.05; 
+            objects.p1.rotation.z = objects.p1.position.x * 0.05;
+
+            // Update Paddle 2 (Guest)
+            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.2;
+            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.2;
+            
+            objects.p2.rotation.y = -objects.p2.position.x * 0.05;
+            objects.p2.rotation.z = objects.p2.position.x * 0.05;
+
+            // Update Ball
+            objects.ball.position.x = state.ball.x;
+            objects.ball.position.y = state.ball.y;
+            objects.ball.position.z = state.ball.z;
+
+            // Kamera Management
+            if (!isHost) {
+                // Balik posisi kamera 180 derajat untuk Guest agar melihat dari sisi P2
+                camera.position.set(0, 15, -30);
+                camera.lookAt(0, 0, 0);
+            } else {
+                camera.position.set(0, 15, 30);
+                camera.lookAt(0, 0, 0);
+            }
         }
 
-        function render() {
-            // Clear Background
-            drawRect(0, 0, GAME_WIDTH, GAME_HEIGHT, '#1f2937'); // Tailwind gray-800
-
-            // Garis Net
-            drawNet();
-
-            // Skor
-            ctx.globalAlpha = 0.5;
-            drawText(gameState.p1.score, GAME_WIDTH / 4, 80, 60);
-            drawText(gameState.p2.score, 3 * GAME_WIDTH / 4, 80, 60);
-            ctx.globalAlpha = 1.0;
-
-            // Paddles
-            // P1 (Host) - Kiri (Warna Biru)
-            drawRect(PADDLE_PADDING, gameState.p1.y, PADDLE_WIDTH, PADDLE_HEIGHT, isHost ? '#3b82f6' : '#9ca3af');
-            // P2 (Guest) - Kanan (Warna Merah/Orange)
-            drawRect(GAME_WIDTH - PADDLE_PADDING - PADDLE_WIDTH, gameState.p2.y, PADDLE_WIDTH, PADDLE_HEIGHT, !isHost ? '#ef4444' : '#9ca3af');
-
-            // Bola
-            drawCircle(gameState.ball.x, gameState.ball.y, gameState.ball.radius, '#f97316'); // Orange terang
-        }
-
-        function gameLoop(timestamp) {
-            if (timestamp - lastTime >= TICK_RATE) {
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            
+            if (gameActive) {
                 updatePhysics();
-                render();
-                lastTime = timestamp;
             }
-            animationFrameId = requestAnimationFrame(gameLoop);
+            renderVisuals();
+            
+            renderer.render(scene, camera);
         }
 
-        function startGame() {
-            showGameScreen();
-            if (isHost) {
-                resetGameHost();
-            }
-            lastTime = performance.now();
-            if(animationFrameId) cancelAnimationFrame(animationFrameId);
-            animationFrameId = requestAnimationFrame(gameLoop);
-        }
+        // Mulai Loop Animasi
+        gameLoop();
 
     </script>
 </body>
