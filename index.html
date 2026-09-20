@@ -386,14 +386,13 @@
             resizeCanvas(); 
         }
 
-        // --- THREE.JS SETUP ---
         const canvas = document.getElementById('gameCanvas');
         
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // PERBAIKAN WARNA KUSAM: Menggunakan sRGB encoding HANYA dan mematikan ToneMapping
+        // HARUS ADA AGAR WARNA TIDAK KUSAM
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.NoToneMapping; 
 
@@ -405,12 +404,12 @@
         camera.position.set(0, 16, 38); 
         camera.lookAt(0, -2, 0);
 
-        // PENCAHAYAAN YANG DIPERBAIKI (TIDAK MEMBUAT OVEREXPOSED/PUDAR)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75); 
+        // PENCAHAYAAN YANG LEBIH BAIK UNTUK WARNA CERAH
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
         scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.5); 
-        spotLight.position.set(0, 45, 0);
+        const spotLight = new THREE.SpotLight(0xffffff, 0.8); // Dikurangi intensity nya agar tidak overexposed (putih)
+        spotLight.position.set(0, 40, 0);
         spotLight.angle = Math.PI / 3;
         spotLight.penumbra = 0.3;
         spotLight.castShadow = true;
@@ -419,13 +418,12 @@
         spotLight.shadow.bias = -0.0005;
         scene.add(spotLight);
         
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.2); 
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3); 
         fillLight.position.set(-20, 20, 20);
         scene.add(fillLight);
 
         const objects = {};
 
-        // Lantai Karpet Gelap
         const floorGeo = new THREE.PlaneGeometry(300, 300);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: 0x3f4b5b,
@@ -440,38 +438,32 @@
 
         const tableGroup = new THREE.Group();
         
-        // MATERIAL MEJA YANG DIPERBAIKI (BIRU TURNAMEN SOLID)
+        // WARNA MEJA BIRU PEKAT
         const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1d4ed8, // Pure bright blue
-            roughness: 0.6,  
-            metalness: 0.1,
-            emissive: 0x0a1945 // Sedikit self-lighting untuk memastikan warnanya muncul
+            color: 0x1e3a8a, // Biru Turnamen Gelap
+            roughness: 0.4,  
+            metalness: 0.0, // Hilangkan pantulan metalik
+            emissive: 0x051030 // Tambahkan emissive sedikit agar warna biru keluar
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
         tableTop.receiveShadow = true;
         tableTop.castShadow = true;
         tableGroup.add(tableTop);
 
-        const lineMat = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, 
-            roughness: 0.8
-        });
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); // Pakai BasicMaterial biar selalu putih bersih
         const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, TABLE_LENGTH), lineMat);
         centerLine.rotation.x = -Math.PI / 2;
         centerLine.position.y = 0.26; 
         tableGroup.add(centerLine);
 
         const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.3, 0.51, TABLE_LENGTH + 0.3);
-        const borderMat = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff,
-            roughness: 0.8
-        });
+        const borderMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const tableBorder = new THREE.Mesh(borderGeo, borderMat);
         tableBorder.position.y = 0;
         tableGroup.add(tableBorder);
 
-        // Kaki Meja Kotak Solid Hitam
+        // Kaki Meja
         const baseMat = new THREE.MeshStandardMaterial({ 
             color: 0x0f172a, 
             roughness: 0.8,
@@ -492,7 +484,7 @@
             ctx.fillStyle = 'rgba(0,0,0,0)';
             ctx.fillRect(0, 0, 1024, 128);
             
-            ctx.strokeStyle = 'rgba(30, 41, 59, 0.9)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.lineWidth = 4;
             ctx.beginPath();
             for(let i=0; i<=1024; i+=12) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
@@ -509,12 +501,12 @@
         }
 
         const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1.0, 1.2);
-        const netMat = new THREE.MeshStandardMaterial({ 
+        const netMat = new THREE.MeshBasicMaterial({ 
             map: createNetTexture(),
             transparent: true,
             side: THREE.DoubleSide,
-            alphaTest: 0.2,
-            roughness: 0.9
+            alphaTest: 0.1,
+            color: 0xffffff
         });
         const net = new THREE.Mesh(netGeo, netMat);
         net.position.y = 0.85;
@@ -532,34 +524,24 @@
 
         scene.add(tableGroup);
 
-        // Raket Merah Hitam Standar
         function createPaddle(rubberColorHex) {
             const group = new THREE.Group();
             
             const woodGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.12, 32);
-            const woodMat = new THREE.MeshStandardMaterial({ 
-                color: 0xc19a6b,
-                roughness: 0.8,
-            });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0xc19a6b, roughness: 0.8 });
             const wood = new THREE.Mesh(woodGeo, woodMat);
             wood.rotation.x = Math.PI / 2; 
             wood.castShadow = true;
             group.add(wood);
 
             const rubberGeo = new THREE.CylinderGeometry(1.48, 1.48, 0.18, 32);
-            const rubberMat = new THREE.MeshStandardMaterial({
-                color: rubberColorHex,
-                roughness: 0.7,
-            });
+            const rubberMat = new THREE.MeshStandardMaterial({ color: rubberColorHex, roughness: 0.7 });
             const rubber = new THREE.Mesh(rubberGeo, rubberMat);
             rubber.rotation.x = Math.PI / 2;
             group.add(rubber);
 
             const handleGeo = new THREE.BoxGeometry(0.55, 2.1, 0.35);
-            const handleMat = new THREE.MeshStandardMaterial({ 
-                color: 0x8b5a2b,
-                roughness: 0.9
-            });
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.9 });
             const handle = new THREE.Mesh(handleGeo, handleMat);
             handle.position.y = -1.9;
             handle.castShadow = true;
@@ -576,13 +558,13 @@
         objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
         scene.add(objects.p2);
 
-        // MATERIAL BOLA YANG DIPERBAIKI (KUNING/ORANYE MENYALA)
+        // BOLA WARNA KUNING TERANG
         const ballGeo = new THREE.SphereGeometry(0.35, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
-            color: 0xffcc00, // Bright yellow/orange
+            color: 0xfef08a, // Kuning terang
             roughness: 0.2,
             metalness: 0.0,
-            emissive: 0x443300 // Memberikan sedikit cahaya pendar agar selalu terlihat
+            emissive: 0x422006 // Sedikit emissive
         });
         objects.ball = new THREE.Mesh(ballGeo, ballMat);
         objects.ball.castShadow = true;
@@ -627,7 +609,7 @@
             }
         });
 
-        const GRAVITY = 0.012; // Sedikit dinaikkan agar bola tidak terlalu melayang lama (smooth curve)
+        const GRAVITY = 0.012; 
 
         function resetGame() {
             state.score = { p1: 0, p2: 0 };
@@ -664,7 +646,7 @@
 
         function executeServe() {
             state.status = 'rally';
-            state.ball.vy = 0.28; // Serve sedikit lebih melambung
+            state.ball.vy = 0.28; 
             state.ball.vz = state.server === 'p1' ? -0.32 : 0.32;
             state.ball.vx = (Math.random() - 0.5) * 0.15; 
             state.lastHit = state.server;
@@ -692,16 +674,16 @@
 
             b.vy -= GRAVITY; 
 
-            // Deteksi tubrukan meja (lebih konsisten)
+            // Pantulan meja
             if (b.y <= 0.60 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
                 if (b.vy < 0) {
-                    b.vy = Math.abs(b.vy) * 0.85; // Bounciness sedikit ditingkatkan
+                    b.vy = Math.abs(b.vy) * 0.85; 
                     b.y = 0.60;
                     state.tableHit = (b.z > 0) ? 'p1' : 'p2';
                 }
             }
 
-            // Deteksi tubrukan net (tidak mantul-mantul)
+            // Pantulan net (diperbaiki agar tidak nyangkut)
             if (Math.abs(b.z) < 0.6 && b.y < 2.0 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
                 if ((b.z > 0 && b.vz < 0) || (b.z < 0 && b.vz > 0)) {
                     b.vz = -b.vz * 0.3; 
@@ -709,13 +691,13 @@
                 }
             }
 
-            // Hitbox P1 yang ditingkatkan presisinya
+            // Hitbox P1 diperbesar sedikit (presisi pukulan yang lebih memaafkan)
             if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.8 && b.vz > 0) {
                 const dx = b.x - state.p1.x;
                 const dy = b.y - state.p1.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 3.0) { // Hitbox sedikir dilebarkan agar lebih mudah dipukul
-                    b.vz = -0.40 - (rallyCount * 0.005); // Semakin lama reli, semakin cepat
-                    b.vy = 0.24 + (state.p1.y - b.y) * 0.06; // Efek spin/pantulan vertikal
+                if (Math.sqrt(dx*dx + dy*dy) < 3.2) { 
+                    b.vz = -0.40 - (rallyCount * 0.005); 
+                    b.vy = 0.24 + (state.p1.y - b.y) * 0.06; 
                     b.vx = dx * 0.16; 
                     rallyCount++;
                     state.lastHit = 'p1';
@@ -728,7 +710,7 @@
             if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.8 && b.vz < 0) {
                 const dx = b.x - state.p2.x;
                 const dy = b.y - state.p2.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 3.0) {
+                if (Math.sqrt(dx*dx + dy*dy) < 3.2) {
                     b.vz = 0.40 + (rallyCount * 0.005); 
                     b.vy = 0.24 + (state.p2.y - b.y) * 0.06;
                     b.vx = dx * 0.16;
@@ -739,7 +721,7 @@
                 }
             }
 
-            // Aturan Skor Realistis (Bola Keluar)
+            // Scoring
             if (b.y < -4) {
                 if (state.lastHit === 'p1') {
                     if (state.tableHit === 'p2') {
@@ -770,7 +752,7 @@
                 checkWinCondition();
             }
 
-            // Gerakan AI yang halus
+            // Gerakan AI
             if (isAI) {
                 const aiTargetX = b.x;
                 const aiTargetY = Math.max(1.5, b.y - 0.2); 
