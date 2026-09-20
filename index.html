@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XXPONG - 3D Table Tennis Multiplayer</title>
+    <title>XXPONG - Professional 3D Table Tennis</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
@@ -15,7 +15,7 @@
             margin: 0;
             overflow: hidden;
             font-family: 'Inter', sans-serif;
-            background-color: #020617;
+            background-color: #0f172a;
             color: #f8fafc;
             touch-action: none;
         }
@@ -52,13 +52,21 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
+        .scoreboard-panel {
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.9) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
         @keyframes pulse-dot {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .status-dot {
-            height: 12px; width: 12px;
+            height: 10px; width: 10px;
             background-color: #10b981;
             border-radius: 50%;
             display: inline-block;
@@ -81,63 +89,72 @@
 
     <canvas id="gameCanvas"></canvas>
 
-    <div id="uiLayer" class="flex flex-col justify-between p-4 md:p-10">
+    <div id="uiLayer" class="flex flex-col justify-between">
         
-        <div id="inGameHeader" class="hidden flex justify-between items-start w-full max-w-6xl mx-auto">
-            <div class="flex items-center space-x-3 md:space-x-4 bg-slate-900/80 backdrop-blur-md p-2 pr-4 md:pr-6 rounded-full shadow-lg border border-slate-700">
-                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 shadow-md flex items-center justify-center text-white font-black text-sm md:text-lg" id="p1Avatar">P1</div>
-                <div>
-                    <h2 id="p1NameLabel" class="font-bold text-xs md:text-base uppercase tracking-wider text-slate-200">HOST</h2>
-                    <p class="text-[8px] md:text-[10px] text-pink-400 font-bold uppercase tracking-widest" id="roomDisplay">Room: ----</p>
+        <!-- Scoreboard - Sleek top bar to save space -->
+        <div id="inGameHeader" class="hidden interactive-ui pointer-events-none w-full">
+            <div class="scoreboard-panel w-full max-w-5xl mx-auto rounded-b-2xl flex justify-between items-center py-2 px-4 md:px-8">
+                
+                <!-- P1 Info -->
+                <div class="flex items-center space-x-3 w-1/3">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 shadow-md flex items-center justify-center text-white font-black text-sm md:text-lg border-2 border-slate-800" id="p1Avatar">P1</div>
+                    <div class="flex flex-col">
+                        <span class="text-[8px] md:text-[10px] text-pink-400 font-bold uppercase tracking-widest leading-none mb-0.5" id="roomDisplay">HOST</span>
+                        <h2 id="p1NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-slate-100 leading-none truncate max-w-[100px] md:max-w-[150px]">PLAYER 1</h2>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="flex flex-col items-center bg-slate-900/80 backdrop-blur-md px-6 md:px-10 py-3 md:py-4 rounded-3xl shadow-lg border border-slate-700 mx-2">
-                <p class="text-[10px] md:text-xs font-bold tracking-[0.3em] text-slate-400 mb-1 md:mb-2">SCORE</p>
-                <div class="flex items-baseline space-x-4 md:space-x-6">
-                    <span id="scoreP1" class="text-4xl md:text-6xl font-black text-pink-500 tracking-tighter">00</span>
-                    <span class="text-xl md:text-2xl text-slate-600">-</span>
-                    <span id="scoreP2" class="text-4xl md:text-6xl font-black text-cyan-500 tracking-tighter">00</span>
+                
+                <!-- Center Score -->
+                <div class="flex flex-col items-center justify-center w-1/3">
+                    <p class="text-[8px] md:text-[9px] font-bold tracking-[0.4em] text-slate-500 uppercase mb-1 hidden md:block">CHAMPIONSHIP</p>
+                    <div class="flex items-center space-x-4 md:space-x-6 bg-slate-900/50 px-4 md:px-6 py-1 md:py-2 rounded-2xl border border-slate-700/50">
+                        <span id="scoreP1" class="text-3xl md:text-5xl font-black text-pink-500 tracking-tighter w-12 md:w-16 text-right">00</span>
+                        <span class="text-lg md:text-xl text-slate-600 font-black">-</span>
+                        <span id="scoreP2" class="text-3xl md:text-5xl font-black text-cyan-500 tracking-tighter w-12 md:w-16 text-left">00</span>
+                    </div>
+                    <div id="gameStatusText" class="mt-1 md:mt-2 text-[8px] md:text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        WAITING
+                    </div>
                 </div>
-                <div id="gameStatusText" class="mt-2 md:mt-4 px-3 md:px-5 py-1.5 md:py-2 bg-slate-800 rounded-full text-[9px] md:text-xs font-bold text-white shadow-inner uppercase tracking-widest border border-slate-600 text-center">
-                    WAITING
-                </div>
-            </div>
 
-            <div class="flex items-center space-x-3 md:space-x-4 text-right bg-slate-900/80 backdrop-blur-md p-2 pl-4 md:pl-6 rounded-full shadow-lg border border-slate-700">
-                <div>
-                    <h2 id="p2NameLabel" class="font-bold text-xs md:text-base uppercase tracking-wider text-slate-200">GUEST</h2>
-                    <p class="text-[8px] md:text-[10px] text-cyan-400 font-bold flex items-center justify-end space-x-2 uppercase tracking-widest">
-                        <span id="connectionStatus">Connected</span>
-                        <span class="status-dot" id="statusDot"></span>
-                    </p>
+                <!-- P2 Info -->
+                <div class="flex items-center justify-end space-x-3 w-1/3 text-right">
+                    <div class="flex flex-col items-end">
+                        <div class="flex items-center space-x-2 leading-none mb-0.5">
+                            <span id="connectionStatus" class="text-[8px] md:text-[10px] text-cyan-400 font-bold uppercase tracking-widest">GUEST</span>
+                            <span class="status-dot" id="statusDot"></span>
+                        </div>
+                        <h2 id="p2NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-slate-100 leading-none truncate max-w-[100px] md:max-w-[150px]">PLAYER 2</h2>
+                    </div>
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md flex items-center justify-center text-white font-black text-sm md:text-lg border-2 border-slate-800" id="p2Avatar">P2</div>
                 </div>
-                <div class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-md flex items-center justify-center text-white font-black text-sm md:text-lg" id="p2Avatar">P2</div>
+
             </div>
         </div>
 
+        <!-- Main Menu -->
         <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0">
             <div class="glass-panel p-8 md:p-12 rounded-[2rem] max-w-md w-full mx-4 relative overflow-hidden">
                 <div class="absolute -top-20 -right-20 w-64 h-64 bg-pink-500 rounded-full opacity-20 blur-[80px]"></div>
                 <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-cyan-500 rounded-full opacity-20 blur-[80px]"></div>
 
-            <div class="text-center mb-8 relative z-10">
-                <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2">XX<span class="text-pink-500">PONG</span></h1>
-                <p class="text-[10px] md:text-xs font-bold text-cyan-400 tracking-[0.3em] uppercase">Multiplayer Arena</p>
-            </div>
+                <div class="text-center mb-8 relative z-10">
+                    <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-white mb-2">XX<span class="text-pink-500">PONG</span></h1>
+                    <p class="text-[10px] md:text-xs font-bold text-cyan-400 tracking-[0.3em] uppercase">Multiplayer Arena</p>
+                </div>
 
-            <div id="alertBox" class="hidden mb-4 p-3 bg-red-900/50 text-red-200 rounded-xl border border-red-700/50 text-xs md:text-sm font-bold text-center shadow-sm backdrop-blur-sm">
+                <div id="alertBox" class="hidden mb-4 p-3 bg-red-900/50 text-red-200 rounded-xl border border-red-700/50 text-xs md:text-sm font-bold text-center shadow-sm backdrop-blur-sm">
                     Alert Message
                 </div>
 
                 <div id="setupSection" class="space-y-5 relative z-10">
                     <div>
                         <label class="block text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 pl-2">Player Name</label>
-                        <input type="text" id="playerName" placeholder="Enter name" class="w-full rounded-2xl px-5 py-3 md:py-4 text-white font-bold transition-all text-base md:text-lg" maxlength="10">
+                        <input type="text" id="playerName" placeholder="Enter name" class="w-full rounded-2xl px-5 py-3 md:py-4 text-white font-bold transition-all text-base md:text-lg uppercase" maxlength="10">
                     </div>
 
                     <div class="pt-2 space-y-3">
-                        <button onclick="playAI()" class="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-black py-3 md:py-4 rounded-2xl shadow-lg shadow-purple-500/30 transition-transform transform hover:scale-[1.02] active:scale-95 tracking-widest text-xs md:text-sm">
+                        <button onclick="playAI()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-black py-3 md:py-4 rounded-2xl shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95 tracking-widest text-xs md:text-sm">
                             PLAY VS AI
                         </button>
 
@@ -179,6 +196,7 @@
             </div>
         </div>
         
+        <!-- Game Over Panel -->
         <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-slate-900/90 backdrop-blur-xl z-20">
             <p class="text-xs md:text-sm font-bold text-cyan-400 mb-2 md:mb-4 tracking-[0.4em] uppercase text-center">Match Concluded</p>
             <h2 class="text-5xl md:text-7xl font-black text-white mb-8 md:mb-12 uppercase tracking-tighter text-center px-4" id="winnerText">WINNER</h2>
@@ -188,7 +206,7 @@
         </div>
         
         <div class="absolute bottom-6 md:bottom-8 left-0 w-full text-center pointer-events-none">
-            <p class="text-[9px] md:text-xs font-bold text-slate-400 tracking-[0.2em] uppercase bg-slate-900/60 backdrop-blur-md border border-slate-700/50 inline-block px-4 md:px-6 py-2 md:py-3 rounded-full shadow-lg">TOUCH / MOUSE TO PLAY • TAP TO SERVE</p>
+            <p id="instructionText" class="text-[9px] md:text-xs font-bold text-slate-400 tracking-[0.2em] uppercase bg-slate-900/60 backdrop-blur-md border border-slate-700/50 inline-block px-4 md:px-6 py-2 md:py-3 rounded-full shadow-lg">TOUCH / MOUSE TO PLAY • TAP TO SERVE</p>
         </div>
     </div>
 
@@ -199,10 +217,11 @@
         const inGameHeader = document.getElementById('inGameHeader');
         const gameOverPanel = document.getElementById('gameOverPanel');
         const alertBox = document.getElementById('alertBox');
+        const instructionText = document.getElementById('instructionText');
         
         let isHost = false;
         let isAI = false;
-        let myName = localStorage.getItem('rally_name') || 'Player';
+        let myName = localStorage.getItem('rally_name') || 'PLAYER';
         document.getElementById('playerName').value = myName;
         
         let peer = null;
@@ -248,7 +267,7 @@
         }
 
         function playAI() {
-            myName = document.getElementById('playerName').value.trim() || 'Player';
+            myName = document.getElementById('playerName').value.trim().toUpperCase() || 'PLAYER';
             localStorage.setItem('rally_name', myName);
             isHost = true;
             isAI = true;
@@ -259,7 +278,7 @@
         }
 
         function hostGame() {
-            myName = document.getElementById('playerName').value.trim() || 'Host';
+            myName = document.getElementById('playerName').value.trim().toUpperCase() || 'HOST';
             localStorage.setItem('rally_name', myName);
             isHost = true;
             isAI = false;
@@ -282,7 +301,7 @@
             const hostId = document.getElementById('joinId').value.trim();
             if (!hostId) { showAlert("Please enter Room ID"); return; }
             
-            myName = document.getElementById('playerName').value.trim() || 'Guest';
+            myName = document.getElementById('playerName').value.trim().toUpperCase() || 'GUEST';
             localStorage.setItem('rally_name', myName);
             isHost = false;
             isAI = false;
@@ -305,7 +324,7 @@
                 if (isHost) {
                     if (data.type === 'init') {
                         document.getElementById('p2NameLabel').textContent = data.name;
-                        document.getElementById('p2Avatar').textContent = data.name.charAt(0).toUpperCase();
+                        document.getElementById('p2Avatar').textContent = data.name.substring(0, 2);
                         resetGame(); 
                     }
                     if (data.type === 'paddleUpdate') {
@@ -318,7 +337,7 @@
                 } else {
                     if (data.type === 'init') {
                         document.getElementById('p1NameLabel').textContent = data.name;
-                        document.getElementById('p1Avatar').textContent = data.name.charAt(0).toUpperCase();
+                        document.getElementById('p1Avatar').textContent = data.name.substring(0, 2);
                     }
                     if (data.type === 'stateUpdate') {
                         syncState(data.state);
@@ -349,6 +368,7 @@
             menuPanel.classList.remove('hidden');
             inGameHeader.classList.add('hidden');
             gameOverPanel.classList.add('hidden');
+            instructionText.classList.remove('hidden');
             gameActive = false;
             isAI = false;
         }
@@ -356,22 +376,23 @@
         function startGameUI() {
             menuPanel.classList.add('hidden');
             inGameHeader.classList.remove('hidden');
+            instructionText.classList.add('hidden');
             
             document.getElementById('p1NameLabel').textContent = myName;
-            document.getElementById('p1Avatar').textContent = myName.charAt(0).toUpperCase();
+            document.getElementById('p1Avatar').textContent = myName.substring(0, 2);
 
             if (isAI) {
-                document.getElementById('roomDisplay').textContent = "Offline";
+                document.getElementById('roomDisplay').textContent = "OFFLINE";
                 document.getElementById('p2NameLabel').textContent = "BOT AI";
-                document.getElementById('p2Avatar').textContent = "B";
-                document.getElementById('connectionStatus').textContent = "Ready";
-                document.getElementById('statusDot').style.backgroundColor = "#8b5cf6"; // Purple for AI
+                document.getElementById('p2Avatar').textContent = "AI";
+                document.getElementById('connectionStatus').textContent = "READY";
+                document.getElementById('statusDot').style.backgroundColor = "#8b5cf6";
             } else if (isHost) {
-                document.getElementById('roomDisplay').textContent = "Room: " + peer.id;
+                document.getElementById('roomDisplay').textContent = "ID: " + peer.id;
             } else {
                 document.getElementById('p2NameLabel').textContent = myName;
-                document.getElementById('p2Avatar').textContent = myName.charAt(0).toUpperCase();
-                document.getElementById('roomDisplay').textContent = "Connected";
+                document.getElementById('p2Avatar').textContent = myName.substring(0, 2);
+                document.getElementById('connectionStatus').textContent = "ONLINE";
             }
             
             gameActive = true;
@@ -380,47 +401,43 @@
 
         // --- THREE.JS SETUP ---
         const canvas = document.getElementById('gameCanvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputEncoding = THREE.sRGBEncoding;
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020617);
-        scene.fog = new THREE.FogExp2(0x020617, 0.012);
+        scene.background = new THREE.Color(0x0f172a); // slate-900 for modern dark theme
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.015);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 18, 34); 
-        camera.lookAt(0, 0, 0);
+        camera.position.set(0, 18, 38); 
+        camera.lookAt(0, -2, 0);
 
-        // Lighting
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.4);
-        scene.add(hemiLight);
+        // Lighting - Adjusted for crisp colors
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(15, 40, 20);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.left = -25;
-        dirLight.shadow.camera.right = 25;
-        dirLight.shadow.camera.top = 25;
-        dirLight.shadow.camera.bottom = -25;
         dirLight.shadow.bias = -0.0005;
         scene.add(dirLight);
 
-        const fillLight = new THREE.PointLight(0x38bdf8, 0.5, 50);
+        const fillLight = new THREE.PointLight(0x38bdf8, 0.4, 50);
         fillLight.position.set(-15, 10, -15);
         scene.add(fillLight);
 
         const objects = {};
 
-        // Floor
+        // Floor - Dark Slate Matte
         const floorGeo = new THREE.PlaneGeometry(200, 200);
         const floorMat = new THREE.MeshStandardMaterial({ 
-            color: 0x0f172a,
+            color: 0x1e293b,
             roughness: 0.9,
-            metalness: 0.1
+            metalness: 0.0
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
@@ -431,12 +448,12 @@
         // Table Group
         const tableGroup = new THREE.Group();
         
-        // Table Top (Vibrant Blue)
-        const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.6, TABLE_LENGTH);
+        // Table Top - Professional Blue
+        const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: 0x0ea5e9, 
-            roughness: 0.3,
-            metalness: 0.2
+            color: 0x1e40af, // blue-800
+            roughness: 0.4,
+            metalness: 0.1
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
         tableTop.receiveShadow = true;
@@ -444,43 +461,35 @@
         tableGroup.add(tableTop);
 
         // Table Lines
-        const lineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1, emissive: 0xffffff, emissiveIntensity: 0.2 });
+        const lineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
         const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, TABLE_LENGTH), lineMat);
         centerLine.rotation.x = -Math.PI / 2;
-        centerLine.position.y = 0.31; 
+        centerLine.position.y = 0.26; 
         tableGroup.add(centerLine);
 
-        const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.4, 0.65, TABLE_LENGTH + 0.4);
-        const borderMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
+        const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.3, 0.51, TABLE_LENGTH + 0.3);
+        const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
         const tableBorder = new THREE.Mesh(borderGeo, borderMat);
-        tableBorder.position.y = -0.05;
+        tableBorder.position.y = 0;
         tableGroup.add(tableBorder);
 
-        // Table Legs
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7, metalness: 0.5 });
-        const legPositions = [
-            [TABLE_WIDTH/2 - 1, -TABLE_HEIGHT/2, TABLE_LENGTH/2 - 1],
-            [-TABLE_WIDTH/2 + 1, -TABLE_HEIGHT/2, TABLE_LENGTH/2 - 1],
-            [TABLE_WIDTH/2 - 1, -TABLE_HEIGHT/2, -TABLE_LENGTH/2 + 1],
-            [-TABLE_WIDTH/2 + 1, -TABLE_HEIGHT/2, -TABLE_LENGTH/2 + 1]
-        ];
-        
-        legPositions.forEach(pos => {
-            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.2, TABLE_HEIGHT, 16), legMat);
-            leg.position.set(pos[0], pos[1], pos[2]);
-            leg.castShadow = true;
-            tableGroup.add(leg);
-        });
+        // Table Base / Skirt
+        const baseGeo = new THREE.BoxGeometry(TABLE_WIDTH - 2, TABLE_HEIGHT, TABLE_LENGTH - 6);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+        const tableBase = new THREE.Mesh(baseGeo, baseMat);
+        tableBase.position.y = -TABLE_HEIGHT / 2;
+        tableBase.castShadow = true;
+        tableGroup.add(tableBase);
 
         // Net Poles
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
-        const pole1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2, 16), poleMat);
-        pole1.position.set(TABLE_WIDTH/2 + 0.4, 1, 0);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.5, roughness: 0.5 });
+        const pole1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.8, 16), poleMat);
+        pole1.position.set(TABLE_WIDTH/2 + 0.3, 0.9, 0);
         pole1.castShadow = true;
         tableGroup.add(pole1);
 
-        const pole2 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2, 16), poleMat);
-        pole2.position.set(-TABLE_WIDTH/2 - 0.4, 1, 0);
+        const pole2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.8, 16), poleMat);
+        pole2.position.set(-TABLE_WIDTH/2 - 0.3, 0.9, 0);
         pole2.castShadow = true;
         tableGroup.add(pole2);
 
@@ -491,11 +500,11 @@
             c.height = 128;
             const ctx = c.getContext('2d');
             ctx.clearRect(0, 0, 512, 128);
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            for(let i=0; i<=512; i+=12) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
-            for(let j=0; j<=128; j+=12) { ctx.moveTo(0, j); ctx.lineTo(512, j); }
+            for(let i=0; i<=512; i+=10) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
+            for(let j=0; j<=128; j+=10) { ctx.moveTo(0, j); ctx.lineTo(512, j); }
             ctx.stroke();
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, 512, 16); 
@@ -506,63 +515,60 @@
             return tex;
         }
 
-        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 0.8, 1.2);
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 0.6, 1.2);
         const netMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
             map: createNetTexture(),
             transparent: true, 
-            opacity: 0.8, 
+            opacity: 0.7, 
             side: THREE.DoubleSide,
             alphaTest: 0.1
         });
         const net = new THREE.Mesh(netGeo, netMat);
-        net.position.y = 1.0;
+        net.position.y = 0.85;
         tableGroup.add(net);
 
         scene.add(tableGroup);
 
         // Paddles
-        function createPaddle(padColor, handleColor) {
+        function createPaddle(padColorHex) {
             const group = new THREE.Group();
             
-            const padGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.4, 32);
+            const padGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.25, 32);
             const padMat = new THREE.MeshStandardMaterial({ 
-                color: padColor, 
-                roughness: 0.4, 
-                metalness: 0.1,
+                color: padColorHex, 
+                roughness: 0.5, 
             });
             const pad = new THREE.Mesh(padGeo, padMat);
             pad.rotation.x = Math.PI / 2; 
             pad.castShadow = true;
             group.add(pad);
 
-            const handleGeo = new THREE.BoxGeometry(0.6, 2.2, 0.4);
-            const handleMat = new THREE.MeshStandardMaterial({ color: handleColor, roughness: 0.9 });
+            const handleGeo = new THREE.BoxGeometry(0.5, 2.0, 0.35);
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, roughness: 0.8 }); // Wood color
             const handle = new THREE.Mesh(handleGeo, handleMat);
-            handle.position.y = -2.0;
+            handle.position.y = -1.9;
             handle.castShadow = true;
             group.add(handle);
 
             return group;
         }
 
-        objects.p1 = createPaddle(0xf43f5e, 0x1e293b); // Pinkish Red
+        objects.p1 = createPaddle(0xf43f5e); // Rose-500
         objects.p1.position.z = TABLE_LENGTH / 2 + 1;
         scene.add(objects.p1);
 
-        objects.p2 = createPaddle(0x06b6d4, 0x1e293b); // Cyan
+        objects.p2 = createPaddle(0x06b6d4); // Cyan-500
         if(isAI) objects.p2.children[0].material.color.setHex(0x8b5cf6); // Purple for AI
         objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
         scene.add(objects.p2);
 
-        // Ball
+        // Ball - Bright Yellow
         const ballGeo = new THREE.SphereGeometry(0.35, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
-            color: 0xfab105, 
-            roughness: 0.1, 
-            metalness: 0.1,
-            emissive: 0xfab105,
-            emissiveIntensity: 0.2
+            color: 0xfde047, // yellow-300
+            roughness: 0.2, 
+            metalness: 0.0,
         });
         objects.ball = new THREE.Mesh(ballGeo, ballMat);
         objects.ball.castShadow = true;
@@ -658,13 +664,10 @@
             const statusEl = document.getElementById('gameStatusText');
             if (state.status === 'serve') {
                 statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR TURN TO SERVE" : (isAI ? "BOT IS SERVING" : "WAITING FOR OPPONENT");
-                statusEl.classList.replace('bg-pink-600', 'bg-slate-800');
-                statusEl.classList.replace('bg-cyan-600', 'bg-slate-800');
-                statusEl.classList.replace('bg-purple-600', 'bg-slate-800');
+                statusEl.className = "mt-1 md:mt-2 text-[8px] md:text-[10px] font-bold text-slate-300 uppercase tracking-widest";
             } else if (state.status === 'rally') {
                 statusEl.textContent = `RALLY: ${rallyCount}`;
-                const colorClass = isHost ? 'bg-pink-600' : (isAI ? 'bg-purple-600' : 'bg-cyan-600');
-                statusEl.className = `mt-2 md:mt-4 px-3 md:px-5 py-1.5 md:py-2 ${colorClass} rounded-full text-[9px] md:text-xs font-bold text-white shadow-inner uppercase tracking-widest border border-transparent text-center`;
+                statusEl.className = "mt-1 md:mt-2 text-[8px] md:text-[10px] font-bold text-white bg-slate-700 px-3 py-0.5 rounded-full uppercase tracking-widest";
             }
         }
 
@@ -679,10 +682,10 @@
             b.vy -= GRAVITY; 
 
             // Table collision
-            if (b.y <= 0.65 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+            if (b.y <= 0.60 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
                 if (b.vy < 0) {
                     b.vy = Math.abs(b.vy) * 0.82; 
-                    b.y = 0.65;
+                    b.y = 0.60;
                     state.tableHit = (b.z > 0) ? 'p1' : 'p2';
                 }
             }
@@ -819,7 +822,6 @@
             renderer.setSize(width, height);
             camera.aspect = width / height;
             
-            // Adjust FOV for mobile portrait screens
             if (camera.aspect < 1) {
                 camera.fov = 70;
             } else {
@@ -848,10 +850,10 @@
 
             if (!isHost && !isAI) {
                 camera.position.set(0, 18, -34);
-                camera.lookAt(0, 0, 0);
+                camera.lookAt(0, -2, 0);
             } else {
                 camera.position.set(0, 18, 34);
-                camera.lookAt(0, 0, 0);
+                camera.lookAt(0, -2, 0);
             }
         }
 
