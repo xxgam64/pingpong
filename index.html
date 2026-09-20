@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XXPONG - Turnamen Profesional</title>
+    <title>XXPONG - Professional 3D Table Tennis</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,8 +15,8 @@
             margin: 0;
             overflow: hidden;
             font-family: 'Inter', sans-serif;
-            background-color: #020617; /* Latar belakang gelap luar arena */
-            color: #ffffff;
+            background-color: #050505;
+            color: #f8fafc;
             touch-action: none;
         }
         
@@ -44,167 +44,193 @@
             pointer-events: auto;
         }
 
-        .premium-glass {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        /* Premium Glass Panel */
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.95));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
-        .scoreboard {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        /* Pro Scoreboard */
+        .scoreboard-panel {
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 2px solid #3b82f6; /* Blue accent */
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .status-dot {
+            height: 10px; width: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse-dot 2s infinite;
         }
 
         input {
-            background-color: rgba(0, 0, 0, 0.3) !important;
+            background-color: rgba(15, 23, 42, 0.8) !important;
             color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px;
-            letter-spacing: 1px;
+            border: 1px solid #334155 !important;
         }
         input:focus {
             outline: none;
             border-color: #3b82f6 !important;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
+        
+        /* Pro Buttons */
+        .btn-ai {
+            background: linear-gradient(to right, #4f46e5, #4338ca);
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+        .btn-ai:hover { background: linear-gradient(to right, #6366f1, #4f46e5); }
+        
+        .btn-host {
+            background: linear-gradient(to right, #dc2626, #b91c1c);
+            box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.39);
+        }
+        .btn-host:hover { background: linear-gradient(to right, #ef4444, #dc2626); }
 
-        .btn-primary {
-            background-color: #2563eb;
-            color: white;
-            border-radius: 8px;
-            font-weight: 800;
-            transition: all 0.2s;
+        .btn-join {
+            background: linear-gradient(to right, #0891b2, #0e7490);
+            box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.39);
         }
-        .btn-primary:hover { background-color: #1d4ed8; transform: translateY(-2px); }
-        .btn-primary:active { transform: translateY(1px); }
-
-        .btn-secondary {
-            background-color: #ef4444;
-            color: white;
-            border-radius: 8px;
-            font-weight: 800;
-            transition: all 0.2s;
-        }
-        .btn-secondary:hover { background-color: #dc2626; transform: translateY(-2px); }
-        .btn-secondary:active { transform: translateY(1px); }
+        .btn-join:hover { background: linear-gradient(to right, #06b6d4, #0891b2); }
     </style>
 </head>
 <body>
 
     <canvas id="gameCanvas"></canvas>
 
-    <div id="uiLayer" class="flex flex-col p-4 md:p-8">
+    <div id="uiLayer" class="flex flex-col p-0 md:p-6">
         
-        <!-- Papan Skor Saat Permainan -->
-        <div id="inGameHeader" class="hidden w-full interactive-ui pointer-events-none absolute top-0 left-0 pt-6">
-            <div class="scoreboard mx-auto max-w-4xl flex justify-between items-stretch rounded-xl overflow-hidden">
-                <div class="flex flex-col items-center justify-center w-1/3 py-3 px-4 bg-slate-800/80">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">TUAN RUMAH</span>
+        <!-- Professional Scoreboard -->
+        <div id="inGameHeader" class="hidden w-full interactive-ui pointer-events-none absolute top-0 left-0 md:relative z-20">
+            <div class="scoreboard-panel mx-auto max-w-4xl flex justify-between items-stretch shadow-2xl rounded-b-2xl md:rounded-2xl overflow-hidden border border-slate-800">
+                
+                <!-- Player 1 (Host) Info -->
+                <div class="flex flex-col justify-center px-6 md:px-8 py-3 w-1/3 bg-slate-900/60 border-r border-slate-800">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">HOST</span>
                     <div class="flex items-center space-x-3">
-                        <span class="text-sm md:text-lg font-black text-white uppercase tracking-wider truncate" id="p1DisplayName">PEMAIN 1</span>
+                        <div class="w-3 h-3 rounded-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"></div>
+                        <span class="text-sm md:text-lg font-black text-white uppercase truncate" id="p1DisplayName">PLAYER 1</span>
                     </div>
                 </div>
                 
-                <div class="flex flex-col items-center justify-center w-1/3 px-4 py-3 bg-slate-900 border-x border-slate-700">
-                    <span class="text-[9px] font-bold tracking-[0.3em] text-slate-400 mb-1">SKOR TURNAMEN</span>
-                    <div class="flex items-center space-x-6">
+                <!-- Score Center -->
+                <div class="flex flex-col items-center justify-center px-8 py-3 w-1/3 bg-black/80 relative">
+                    <div class="absolute top-0 w-full h-1 bg-gradient-to-r from-red-600 via-purple-600 to-cyan-600"></div>
+                    <span class="text-[9px] font-bold tracking-[0.4em] text-slate-400 mb-1">CHAMPIONSHIP</span>
+                    <div class="flex items-center space-x-4 md:space-x-6">
                         <span id="scoreP1" class="text-4xl md:text-5xl font-black text-white tracking-tighter">00</span>
-                        <span class="text-xl font-bold text-slate-600">-</span>
+                        <span class="text-xl font-bold text-slate-700">-</span>
                         <span id="scoreP2" class="text-4xl md:text-5xl font-black text-white tracking-tighter">00</span>
                     </div>
-                    <div id="gameStatusText" class="mt-2 text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-800 px-4 py-1 rounded-full border border-slate-600">
-                        MENUNGGU
+                    <div id="gameStatusText" class="mt-2 text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-800/80 px-4 py-1 rounded-full border border-slate-700">
+                        WAITING
                     </div>
                 </div>
 
-                <div class="flex flex-col items-center justify-center w-1/3 py-3 px-4 bg-slate-800/80">
+                <!-- Player 2 (Guest) Info -->
+                <div class="flex flex-col justify-center items-end px-6 md:px-8 py-3 w-1/3 bg-slate-900/60 border-l border-slate-800">
                     <div class="flex items-center space-x-2 mb-1">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TAMU</span>
-                        <span class="text-[8px] font-mono text-slate-300 bg-slate-900 px-2 py-0.5 rounded" id="roomDisplay">ID: ----</span>
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">GUEST</span>
+                        <span class="text-[8px] font-mono text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800" id="roomDisplay">ID: ----</span>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <span class="text-sm md:text-lg font-black text-white uppercase tracking-wider truncate" id="p2DisplayName">PEMAIN 2</span>
-                        <div class="w-2 h-2 rounded-full bg-slate-600" id="p2ColorIndicator"></div>
+                        <span class="text-sm md:text-lg font-black text-white uppercase truncate" id="p2DisplayName">PLAYER 2</span>
+                        <div class="w-3 h-3 rounded-full bg-slate-700 border border-slate-500" id="p2ColorIndicator"></div>
                     </div>
                 </div>
+
             </div>
         </div>
 
-        <!-- Panel Menu Utama -->
-        <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0">
-            <div class="premium-glass p-8 md:p-10 rounded-2xl max-w-md w-full mx-4">
-                <div class="text-center mb-8">
-                    <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-white mb-1">XX<span class="text-blue-500">PONG</span></h1>
-                    <p class="text-[10px] font-bold text-slate-400 tracking-[0.3em] uppercase">Arena Profesional</p>
+        <!-- Main Menu -->
+        <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0 z-30">
+            <div class="glass-panel p-8 md:p-12 rounded-[2rem] max-w-md w-full mx-4 relative overflow-hidden">
+                <!-- Background ambient colors -->
+                <div class="absolute -top-32 -right-32 w-64 h-64 bg-red-600 rounded-full opacity-10 blur-[80px]"></div>
+                <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-600 rounded-full opacity-10 blur-[80px]"></div>
+
+                <div class="text-center mb-10 relative z-10">
+                    <h1 class="text-6xl font-black tracking-tighter text-white mb-2 drop-shadow-lg">XX<span class="text-red-600">PONG</span></h1>
+                    <p class="text-[10px] font-bold text-slate-400 tracking-[0.4em] uppercase">Pro Tournament Edition</p>
                 </div>
 
-                <div id="alertBox" class="hidden mb-6 p-3 bg-red-900/80 border border-red-700 text-white rounded-lg text-xs font-bold text-center">
-                    Peringatan
+                <div id="alertBox" class="hidden mb-6 p-3 bg-red-900/50 border border-red-800/50 text-red-200 rounded-xl text-xs font-bold text-center">
+                    Alert Message
                 </div>
 
-                <div id="setupSection" class="space-y-5">
+                <div id="setupSection" class="space-y-6 relative z-10">
                     <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nama Pemain</label>
-                        <input type="text" id="playerName" placeholder="MASUKKAN NAMA" class="w-full px-4 py-3 text-sm font-bold uppercase text-center" maxlength="10">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 pl-1">Player Name</label>
+                        <input type="text" id="playerName" placeholder="Enter Name" class="w-full rounded-xl px-5 py-4 text-white font-bold text-sm uppercase tracking-wide text-center" maxlength="10">
                     </div>
 
                     <div class="pt-2 space-y-3">
-                        <button onclick="playAI()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors">
-                            LATIHAN VS AI
+                        <button onclick="playAI()" class="w-full btn-ai text-white font-black py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 tracking-widest text-xs uppercase">
+                            TRAINING VS AI
                         </button>
 
-                        <button onclick="hostGame()" class="w-full btn-primary py-3 text-xs uppercase tracking-widest">
-                            BUAT PERTANDINGAN
+                        <button onclick="hostGame()" class="w-full btn-host text-white font-black py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 tracking-widest text-xs uppercase">
+                            HOST ONLINE MATCH
                         </button>
                         
-                        <div class="flex items-center py-2">
-                            <div class="flex-grow border-t border-slate-600"></div>
-                            <span class="mx-3 text-slate-400 text-[10px] font-bold uppercase tracking-widest">ATAU GABUNG</span>
-                            <div class="flex-grow border-t border-slate-600"></div>
+                        <div class="relative flex items-center py-2">
+                            <div class="flex-grow border-t border-slate-700/50"></div>
+                            <span class="mx-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest">OR JOIN</span>
+                            <div class="flex-grow border-t border-slate-700/50"></div>
                         </div>
 
-                        <div class="flex space-x-2">
-                            <input type="text" id="joinId" placeholder="KODE RUANGAN" class="w-2/3 px-3 py-3 text-xs font-mono uppercase font-bold text-center">
-                            <button onclick="joinGame()" class="w-1/3 btn-secondary py-3 text-xs uppercase tracking-widest">
-                                GABUNG
+                        <div class="flex space-x-3">
+                            <input type="text" id="joinId" placeholder="Room ID" class="w-2/3 rounded-xl px-4 py-4 font-mono text-xs text-center uppercase tracking-widest">
+                            <button onclick="joinGame()" class="w-1/3 btn-join text-white font-black py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-95 tracking-widest text-xs uppercase">
+                                JOIN
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div id="waitingSection" class="hidden text-center space-y-6 py-4">
+                <!-- Waiting Lobby -->
+                <div id="waitingSection" class="hidden text-center space-y-8 relative z-10 py-6">
                     <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bagikan Kode Akses</p>
-                        <div class="bg-slate-900 border border-slate-600 p-4 rounded-lg flex items-center justify-between">
-                            <span id="displayRoomId" class="font-mono text-lg font-black text-white tracking-widest">Memuat...</span>
-                            <button onclick="copyId()" id="copyBtn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-[10px] font-bold text-white transition-colors">
-                                SALIN
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Share this Room ID</p>
+                        <div class="bg-black/40 border border-slate-700 p-4 rounded-xl flex items-center justify-between">
+                            <span id="displayRoomId" class="font-mono text-lg font-black text-cyan-400 tracking-wider">Loading...</span>
+                            <button onclick="copyId()" id="copyBtn" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-xs font-bold text-white transition-colors">
+                                COPY
                             </button>
                         </div>
                     </div>
-                    <div class="flex flex-col items-center space-y-4">
-                        <div class="w-10 h-10 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
-                        <p class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Menunggu lawan...</p>
+                    <div class="flex flex-col items-center space-y-5">
+                        <div class="w-12 h-12 border-4 border-slate-800 border-t-red-500 rounded-full animate-spin"></div>
+                        <p class="text-[10px] font-bold tracking-[0.2em] text-slate-400 uppercase animate-pulse">Awaiting Challenger...</p>
                     </div>
-                    <button onclick="cancelMatch()" class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors mt-2">Batalkan</button>
+                    <button onclick="cancelMatch()" class="text-[10px] font-bold text-slate-500 hover:text-red-400 uppercase tracking-widest transition-colors">Abort</button>
                 </div>
             </div>
         </div>
         
-        <!-- Panel Akhir Permainan -->
-        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-slate-900/95 z-50">
-            <p class="text-sm font-bold text-slate-400 mb-3 tracking-[0.4em] uppercase">PERTANDINGAN SELESAI</p>
-            <h2 class="text-6xl md:text-8xl font-black text-white mb-10 uppercase tracking-tighter" id="winnerText">PEMENANG</h2>
-            <button onclick="restartMatch()" class="btn-primary px-10 py-4 text-sm uppercase tracking-widest">
-                MAIN LAGI
+        <!-- Game Over Panel -->
+        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-slate-950/95 backdrop-blur-md z-40">
+            <p class="text-sm font-bold text-slate-500 mb-4 tracking-[0.5em] uppercase">Match Concluded</p>
+            <h2 class="text-6xl md:text-8xl font-black text-white mb-12 uppercase tracking-tighter drop-shadow-2xl" id="winnerText">WINNER</h2>
+            <button onclick="restartMatch()" class="btn-host px-12 py-5 rounded-xl font-black transition-transform transform hover:scale-105 tracking-[0.2em] text-sm uppercase">
+                REMATCH
             </button>
         </div>
         
-        <div class="absolute bottom-6 left-0 w-full text-center pointer-events-none">
-            <p id="instructionText" class="text-[10px] font-bold text-slate-300 tracking-[0.3em] uppercase bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-700 inline-block">GERAKKAN UNTUK BERMAIN • KLIK UNTUK SERVIS</p>
+        <!-- Instruction Text -->
+        <div class="absolute bottom-6 left-0 w-full text-center pointer-events-none z-20">
+            <p id="instructionText" class="text-[10px] font-bold text-slate-400 tracking-[0.3em] uppercase bg-black/60 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-800 inline-block shadow-lg">MOVE TO PLAY • CLICK TO SERVE</p>
         </div>
     </div>
 
@@ -219,7 +245,7 @@
         
         let isHost = false;
         let isAI = false;
-        let myName = localStorage.getItem('xxpong_name') || 'PEMAIN';
+        let myName = localStorage.getItem('xxpong_name') || 'PLAYER';
         document.getElementById('playerName').value = myName;
         
         let peer = null;
@@ -228,7 +254,6 @@
         let rallyCount = 0;
         let aiServeTimer = 0;
 
-        // State Utama Permainan
         let state = {
             status: 'menu', 
             score: { p1: 0, p2: 0 },
@@ -252,7 +277,6 @@
             setTimeout(() => alertBox.classList.add('hidden'), 3000);
         }
 
-        // --- MANAJEMEN JARINGAN (PEERJS) ---
         function initNetwork(callback) {
             if (peer) peer.destroy();
             peer = new Peer(null, { debug: 2 });
@@ -261,13 +285,13 @@
                 callback(id);
             });
             peer.on('error', (err) => {
-                showAlert("Kesalahan Koneksi");
+                showAlert("Connection Error: " + err.type);
                 cancelMatch();
             });
         }
 
         function playAI() {
-            myName = document.getElementById('playerName').value.trim() || 'PEMAIN';
+            myName = document.getElementById('playerName').value.trim() || 'PLAYER';
             localStorage.setItem('xxpong_name', myName.toUpperCase());
             isHost = true;
             isAI = true;
@@ -299,9 +323,9 @@
 
         function joinGame() {
             const hostId = document.getElementById('joinId').value.trim();
-            if (!hostId) { showAlert("KODE RUANGAN DIBUTUHKAN"); return; }
+            if (!hostId) { showAlert("Require Room ID"); return; }
             
-            myName = document.getElementById('playerName').value.trim() || 'TAMU';
+            myName = document.getElementById('playerName').value.trim() || 'GUEST';
             localStorage.setItem('xxpong_name', myName.toUpperCase());
             isHost = false;
             isAI = false;
@@ -344,7 +368,7 @@
             });
 
             conn.on('close', () => {
-                showAlert("Lawan terputus.");
+                showAlert("Opponent disconnected.");
                 cancelMatch();
             });
         }
@@ -353,8 +377,8 @@
             const id = document.getElementById('displayRoomId').textContent;
             navigator.clipboard.writeText(id).then(() => {
                 const btn = document.getElementById('copyBtn');
-                btn.textContent = 'TERSALIN';
-                setTimeout(() => btn.textContent = 'SALIN', 2000);
+                btn.textContent = 'COPIED';
+                setTimeout(() => btn.textContent = 'COPY', 2000);
             });
         }
 
@@ -381,48 +405,44 @@
             if (isAI) {
                 document.getElementById('roomDisplay').textContent = "OFFLINE";
                 document.getElementById('p2DisplayName').textContent = "COM (AI)";
-                document.getElementById('p2ColorIndicator').className = "w-2 h-2 rounded-full bg-slate-500";
+                document.getElementById('p2ColorIndicator').className = "w-3 h-3 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]";
             } else if (isHost) {
                 document.getElementById('roomDisplay').textContent = "ID: " + peer.id;
-                document.getElementById('p2ColorIndicator').className = "w-2 h-2 rounded-full bg-slate-600";
+                document.getElementById('p2ColorIndicator').className = "w-3 h-3 rounded-full bg-slate-700 border border-slate-500";
             } else {
                 document.getElementById('p2DisplayName').textContent = myName.toUpperCase();
                 document.getElementById('roomDisplay').textContent = "ONLINE";
-                document.getElementById('p2ColorIndicator').className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)]";
+                document.getElementById('p2ColorIndicator').className = "w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.8)]";
             }
             
             gameActive = true;
             resizeCanvas(); 
         }
 
-        // --- THREE.JS SETUP (Vibrant Colors Fix) ---
         const canvas = document.getElementById('gameCanvas');
-        
-        // Setup Renderer
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
-        // FIX: Ensure correct color encoding so colors pop!
+        // CRITICAL FIX: Ensure colors pop and don't wash out!
         renderer.outputEncoding = THREE.sRGBEncoding;
-        
-        // FIX: Remove tone mapping to prevent washed-out look for standard colors
         renderer.toneMapping = THREE.NoToneMapping; 
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x080808); 
-        scene.fog = new THREE.FogExp2(0x080808, 0.015);
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.FogExp2(0x0a0a0a, 0.015);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 16, 38); 
         camera.lookAt(0, -2, 0);
 
-        // Lighting yang disesuaikan
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Sedikit dikurangi agar tidak memutihkan warna meja
+        // Professional Stadium Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Increase ambient
         scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.8); // Dikurangi intensity nya
-        spotLight.position.set(0, 45, 0);
+        // Center stadium spotlight (Reduced intensity so it doesn't wash out the table)
+        const spotLight = new THREE.SpotLight(0xffffff, 0.8);
+        spotLight.position.set(0, 40, 0);
         spotLight.angle = Math.PI / 4;
         spotLight.penumbra = 0.5;
         spotLight.castShadow = true;
@@ -430,15 +450,16 @@
         spotLight.shadow.mapSize.height = 2048;
         spotLight.shadow.bias = -0.0005;
         scene.add(spotLight);
-        
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        fillLight.position.set(-20, 20, 20);
-        scene.add(fillLight);
+
+        // Fill lights
+        const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight1.position.set(-20, 20, 20);
+        scene.add(fillLight1);
 
         const objects = {};
 
-        // Dark Floor
-        const floorGeo = new THREE.PlaneGeometry(300, 300);
+        // Dark floor
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
         const floorMat = new THREE.MeshStandardMaterial({ 
             color: 0x111111,
             roughness: 0.8,
@@ -449,29 +470,27 @@
         floor.position.y = -TABLE_HEIGHT; 
         floor.receiveShadow = true;
         scene.add(floor);
-
-        // Arena Mat under table (Dark Red/Tournament Style)
-        const arenaMatGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 15, TABLE_LENGTH + 20);
-        const arenaMatMat = new THREE.MeshStandardMaterial({
-            color: 0x4a0000,
-            roughness: 0.9,
-            metalness: 0.1
+        
+        // Tournament Red Carpet Under Table
+        const carpetGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 10, TABLE_LENGTH + 16);
+        const carpetMat = new THREE.MeshStandardMaterial({
+            color: 0x7f1d1d, // Red-900
+            roughness: 1.0,
+            metalness: 0.0
         });
-        const arenaMat = new THREE.Mesh(arenaMatGeo, arenaMatMat);
-        arenaMat.rotation.x = -Math.PI / 2;
-        arenaMat.position.y = -TABLE_HEIGHT + 0.05;
-        arenaMat.receiveShadow = true;
-        scene.add(arenaMat);
+        const carpet = new THREE.Mesh(carpetGeo, carpetMat);
+        carpet.rotation.x = -Math.PI / 2;
+        carpet.position.y = -TABLE_HEIGHT + 0.05;
+        carpet.receiveShadow = true;
+        scene.add(carpet);
 
-        // Table Group
         const tableGroup = new THREE.Group();
         
-        // FIX: Table Top (Professional Tournament Blue)
-        // Menggunakan roughness tinggi dan sedikit metalness agar warna birunya absolut
+        // Competition Blue Table (Using BasicMaterial to ensure solid color)
         const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1e40af, // blue-800
-            roughness: 0.8,
+            color: 0x1e3a8a, // Blue-900 (Solid Tournament Blue)
+            roughness: 0.6,
             metalness: 0.1
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
@@ -479,8 +498,7 @@
         tableTop.castShadow = true;
         tableGroup.add(tableTop);
 
-        // Table Lines (Sharp White)
-        // Menggunakan BasicMaterial agar putihnya solid
+        // Crisp White Lines
         const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, TABLE_LENGTH), lineMat);
         centerLine.rotation.x = -Math.PI / 2;
@@ -493,36 +511,31 @@
         tableBorder.position.y = 0;
         tableGroup.add(tableBorder);
 
-        // Table Legs
-        const baseMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1e293b, 
-            roughness: 0.8,
-            metalness: 0.2
-        });
-        const tableBase = new THREE.Mesh(new THREE.BoxGeometry(TABLE_WIDTH - 2, TABLE_HEIGHT, TABLE_LENGTH - 6), baseMat);
+        // Solid Table Legs
+        const legMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8, metalness: 0.2 });
+        const tableBase = new THREE.Mesh(new THREE.BoxGeometry(TABLE_WIDTH - 2, TABLE_HEIGHT, TABLE_LENGTH - 6), legMat);
         tableBase.position.y = -TABLE_HEIGHT / 2;
         tableBase.castShadow = true;
         tableGroup.add(tableBase);
 
-        // Net
+        // Realistic Net
         function createNetTexture() {
             const c = document.createElement('canvas');
-            c.width = 1024;
+            c.width = 512;
             c.height = 128;
             const ctx = c.getContext('2d');
-            
             ctx.fillStyle = 'rgba(0,0,0,0)';
-            ctx.fillRect(0, 0, 1024, 128);
+            ctx.fillRect(0, 0, 512, 128);
             
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            for(let i=0; i<=1024; i+=12) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
-            for(let j=0; j<=128; j+=12) { ctx.moveTo(0, j); ctx.lineTo(1024, j); }
+            for(let i=0; i<=512; i+=8) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
+            for(let j=0; j<=128; j+=8) { ctx.moveTo(0, j); ctx.lineTo(512, j); }
             ctx.stroke();
             
-            ctx.fillStyle = '#ffffff'; 
-            ctx.fillRect(0, 110, 1024, 18); 
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 112, 512, 16); 
             
             const tex = new THREE.CanvasTexture(c);
             tex.wrapS = THREE.RepeatWrapping;
@@ -530,58 +543,50 @@
             return tex;
         }
 
-        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1.0, 1.2);
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 0.5, 1.2);
         const netMat = new THREE.MeshStandardMaterial({ 
             map: createNetTexture(),
             transparent: true,
             side: THREE.DoubleSide,
-            alphaTest: 0.1,
-            color: 0xffffff
+            alphaTest: 0.1
         });
         const net = new THREE.Mesh(netGeo, netMat);
         net.position.y = 0.85;
         tableGroup.add(net);
         
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.2, roughness: 0.8 });
-        const pole1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 16), poleMat);
-        pole1.position.set(TABLE_WIDTH/2 + 0.4, 0.9, 0);
+        // Net poles
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.2 });
+        const pole1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 16), poleMat);
+        pole1.position.set(TABLE_WIDTH/2 + 0.2, 0.9, 0);
         pole1.castShadow = true;
         tableGroup.add(pole1);
-        const pole2 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 16), poleMat);
-        pole2.position.set(-TABLE_WIDTH/2 - 0.4, 0.9, 0);
+        const pole2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 16), poleMat);
+        pole2.position.set(-TABLE_WIDTH/2 - 0.2, 0.9, 0);
         pole2.castShadow = true;
         tableGroup.add(pole2);
 
         scene.add(tableGroup);
 
-        // Paddles
         function createPaddle(rubberColorHex) {
             const group = new THREE.Group();
             
-            const woodGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.12, 32);
-            const woodMat = new THREE.MeshStandardMaterial({ 
-                color: 0xd4a373,
-                roughness: 0.8,
-            });
-            const wood = new THREE.Mesh(woodGeo, woodMat);
-            wood.rotation.x = Math.PI / 2; 
-            wood.castShadow = true;
-            group.add(wood);
+            // Wood blade
+            const bladeMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.8 });
+            const bladeGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.12, 32);
+            const blade = new THREE.Mesh(bladeGeo, bladeMat);
+            blade.rotation.x = Math.PI / 2; 
+            blade.castShadow = true;
+            group.add(blade);
 
+            // Rubber
             const rubberGeo = new THREE.CylinderGeometry(1.48, 1.48, 0.18, 32);
-            const rubberMat = new THREE.MeshStandardMaterial({
-                color: rubberColorHex,
-                roughness: 0.6,
-            });
+            const rubberMat = new THREE.MeshStandardMaterial({ color: rubberColorHex, roughness: 0.6 });
             const rubber = new THREE.Mesh(rubberGeo, rubberMat);
             rubber.rotation.x = Math.PI / 2;
             group.add(rubber);
 
-            const handleGeo = new THREE.BoxGeometry(0.55, 2.1, 0.35);
-            const handleMat = new THREE.MeshStandardMaterial({ 
-                color: 0x333333,
-                roughness: 0.9
-            });
+            const handleGeo = new THREE.BoxGeometry(0.5, 2.0, 0.35);
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
             const handle = new THREE.Mesh(handleGeo, handleMat);
             handle.position.y = -1.9;
             handle.castShadow = true;
@@ -590,21 +595,22 @@
             return group;
         }
 
-        objects.p1 = createPaddle(0xdc2626); // Bright Red
+        objects.p1 = createPaddle(0xdc2626); // Red
         objects.p1.position.z = TABLE_LENGTH / 2 + 1;
         scene.add(objects.p1);
 
-        objects.p2 = createPaddle(0x111111); // Pro Black
+        objects.p2 = createPaddle(0x111111); // Black
         objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
         scene.add(objects.p2);
 
-        // FIX: Ball (High visibility yellow/orange)
-        // Emissive ditambahkan agar warna kuningnya keluar walau tanpa pantulan cahaya yang kuat
+        // High visibility Yellow Ball
         const ballGeo = new THREE.SphereGeometry(0.32, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
-            color: 0xfde047, // yellow-300
+            color: 0xfacc15, // Yellow-400
             roughness: 0.2,
-            emissive: 0x444444 
+            metalness: 0.1,
+            emissive: 0x854d0e, // Give it a slight inner glow
+            emissiveIntensity: 0.2
         });
         objects.ball = new THREE.Mesh(ballGeo, ballMat);
         objects.ball.castShadow = true;
@@ -649,7 +655,7 @@
             }
         });
 
-        const GRAVITY = 0.012; 
+        const GRAVITY = 0.012;
 
         function resetGame() {
             state.score = { p1: 0, p2: 0 };
@@ -663,7 +669,7 @@
             if (isHost || isAI) {
                 resetGame();
             } else {
-                showAlert("Menunggu Tuan Rumah memulai ulang");
+                showAlert("Waiting for Host to restart");
             }
         }
 
@@ -686,8 +692,8 @@
 
         function executeServe() {
             state.status = 'rally';
-            state.ball.vy = 0.28; 
-            state.ball.vz = state.server === 'p1' ? -0.32 : 0.32;
+            state.ball.vy = 0.25; 
+            state.ball.vz = state.server === 'p1' ? -0.3 : 0.3;
             state.ball.vx = (Math.random() - 0.5) * 0.15; 
             state.lastHit = state.server;
             state.tableHit = null;
@@ -698,9 +704,11 @@
         function updateStatusUI() {
             const statusEl = document.getElementById('gameStatusText');
             if (state.status === 'serve') {
-                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "GILIRAN SERVIS" : (isAI ? "BOT SERVIS" : "MENUNGGU");
+                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR SERVE" : (isAI ? "COM SERVE" : "WAITING");
+                statusEl.className = "mt-2 text-[9px] font-bold text-red-400 uppercase tracking-widest bg-red-900/40 px-4 py-1 rounded-full border border-red-800";
             } else if (state.status === 'rally') {
-                statusEl.textContent = `RELI: ${rallyCount}`;
+                statusEl.textContent = `RALLY: ${rallyCount}`;
+                statusEl.className = "mt-2 text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-800/80 px-4 py-1 rounded-full border border-slate-700";
             }
         }
 
@@ -714,16 +722,16 @@
 
             b.vy -= GRAVITY; 
 
-            // Pantulan meja
-            if (b.y <= 0.60 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+            // Table Collision
+            if (b.y <= 0.57 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
                 if (b.vy < 0) {
-                    b.vy = Math.abs(b.vy) * 0.85; // Bouncing yang sedikit lebih alami
-                    b.y = 0.60;
+                    b.vy = Math.abs(b.vy) * 0.82; 
+                    b.y = 0.57;
                     state.tableHit = (b.z > 0) ? 'p1' : 'p2';
                 }
             }
 
-            // Pantulan net (diperbaiki agar tidak nyangkut)
+            // Net Collision
             if (Math.abs(b.z) < 0.6 && b.y < 2.0 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
                 if ((b.z > 0 && b.vz < 0) || (b.z < 0 && b.vz > 0)) {
                     b.vz = -b.vz * 0.3; 
@@ -731,14 +739,14 @@
                 }
             }
 
-            // FIX: Hitbox P1 diperbesar sedikit (presisi pukulan yang lebih memaafkan)
+            // P1 Paddle Collision (Slightly larger hitbox for precision)
             if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.8 && b.vz > 0) {
                 const dx = b.x - state.p1.x;
                 const dy = b.y - state.p1.y;
                 if (Math.sqrt(dx*dx + dy*dy) < 3.2) { 
-                    b.vz = -0.40 - (rallyCount * 0.005); 
-                    b.vy = 0.24 + (state.p1.y - b.y) * 0.06; 
-                    b.vx = dx * 0.16; 
+                    b.vz = -0.38; 
+                    b.vy = 0.22 + (state.p1.y - b.y) * 0.05; 
+                    b.vx = dx * 0.15; 
                     rallyCount++;
                     state.lastHit = 'p1';
                     state.tableHit = null;
@@ -746,14 +754,14 @@
                 }
             }
 
-            // FIX: Hitbox P2/AI
+            // P2/AI Paddle Collision
             if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.8 && b.vz < 0) {
                 const dx = b.x - state.p2.x;
                 const dy = b.y - state.p2.y;
                 if (Math.sqrt(dx*dx + dy*dy) < 3.2) {
-                    b.vz = 0.40 + (rallyCount * 0.005); 
-                    b.vy = 0.24 + (state.p2.y - b.y) * 0.06;
-                    b.vx = dx * 0.16;
+                    b.vz = 0.38; 
+                    b.vy = 0.22 + (state.p2.y - b.y) * 0.05;
+                    b.vx = dx * 0.15;
                     rallyCount++;
                     state.lastHit = 'p2';
                     state.tableHit = null;
@@ -761,7 +769,7 @@
                 }
             }
 
-            // Scoring
+            // Scoring Logic
             if (b.y < -4) {
                 if (state.lastHit === 'p1') {
                     if (state.tableHit === 'p2') {
@@ -792,11 +800,11 @@
                 checkWinCondition();
             }
 
-            // Gerakan AI
+            // AI Movement
             if (isAI) {
                 const aiTargetX = b.x;
-                const aiTargetY = Math.max(1.5, b.y - 0.2); 
-                const aiSpeed = 0.07 + (rallyCount * 0.004); 
+                const aiTargetY = Math.max(1, b.y - 0.5); 
+                const aiSpeed = 0.06 + (rallyCount * 0.003); 
                 
                 state.p2.x += (aiTargetX - state.p2.x) * aiSpeed;
                 state.p2.y += (aiTargetY - state.p2.y) * aiSpeed;
@@ -838,10 +846,10 @@
                 const wText = document.getElementById('winnerText');
                 if (state.winner === 'p1') {
                     wText.textContent = document.getElementById('p1DisplayName').textContent;
-                    wText.className = "text-5xl md:text-6xl font-black text-red-500 mb-10 uppercase tracking-tighter truncate";
+                    wText.className = "text-5xl md:text-7xl font-black text-red-500 mb-10 uppercase tracking-tighter truncate drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]";
                 } else {
                     wText.textContent = document.getElementById('p2DisplayName').textContent;
-                    wText.className = "text-5xl md:text-6xl font-black text-slate-300 mb-10 uppercase tracking-tighter truncate";
+                    wText.className = "text-5xl md:text-7xl font-black text-cyan-400 mb-10 uppercase tracking-tighter truncate drop-shadow-[0_0_20px_rgba(34,211,238,0.5)]";
                 }
                 gameOverPanel.classList.remove('hidden');
             } else {
@@ -869,20 +877,22 @@
         resizeCanvas();
 
         function renderVisuals() {
-            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.25;
-            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.25;
-            objects.p1.rotation.y = -objects.p1.position.x * 0.04; 
-            objects.p1.rotation.z = objects.p1.position.x * 0.04;
+            // Smooth paddle movement
+            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.3;
+            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.3;
+            objects.p1.rotation.y = -objects.p1.position.x * 0.05; 
+            objects.p1.rotation.z = objects.p1.position.x * 0.05;
 
-            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.25;
-            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.25;
-            objects.p2.rotation.y = -objects.p2.position.x * 0.04;
-            objects.p2.rotation.z = objects.p2.position.x * 0.04;
+            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.3;
+            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.3;
+            objects.p2.rotation.y = -objects.p2.position.x * 0.05;
+            objects.p2.rotation.z = objects.p2.position.x * 0.05;
 
             objects.ball.position.x = state.ball.x;
             objects.ball.position.y = state.ball.y;
             objects.ball.position.z = state.ball.z;
 
+            // Camera View
             if (!isHost && !isAI) {
                 if (camera.aspect < 1) {
                     camera.position.set(0, 18, -42);
