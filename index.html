@@ -1,4 +1,376 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XXPONG - Turnamen Profesional</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Latar belakang gelap luar arena */
+            color: #ffffff;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .interactive-ui {
+            pointer-events: auto;
+        }
+
+        .premium-glass {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .scoreboard {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        input {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 8px;
+            letter-spacing: 1px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            border-radius: 8px;
+            font-weight: 800;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+        .btn-primary:active { transform: translateY(1px); }
+
+        .btn-secondary {
+            background-color: #ef4444;
+            color: white;
+            border-radius: 8px;
+            font-weight: 800;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { background-color: #dc2626; transform: translateY(-2px); }
+        .btn-secondary:active { transform: translateY(1px); }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="uiLayer" class="flex flex-col p-4 md:p-8">
+        
+        <!-- Papan Skor Saat Permainan -->
+        <div id="inGameHeader" class="hidden w-full interactive-ui pointer-events-none absolute top-0 left-0 pt-6">
+            <div class="scoreboard mx-auto max-w-4xl flex justify-between items-stretch rounded-xl overflow-hidden">
+                <div class="flex flex-col items-center justify-center w-1/3 py-3 px-4 bg-slate-800/80">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">TUAN RUMAH</span>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm md:text-lg font-black text-white uppercase tracking-wider truncate" id="p1DisplayName">PEMAIN 1</span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-center justify-center w-1/3 px-4 py-3 bg-slate-900 border-x border-slate-700">
+                    <span class="text-[9px] font-bold tracking-[0.3em] text-slate-400 mb-1">SKOR TURNAMEN</span>
+                    <div class="flex items-center space-x-6">
+                        <span id="scoreP1" class="text-4xl md:text-5xl font-black text-white tracking-tighter">00</span>
+                        <span class="text-xl font-bold text-slate-600">-</span>
+                        <span id="scoreP2" class="text-4xl md:text-5xl font-black text-white tracking-tighter">00</span>
+                    </div>
+                    <div id="gameStatusText" class="mt-2 text-[9px] font-bold text-slate-300 uppercase tracking-widest bg-slate-800 px-4 py-1 rounded-full border border-slate-600">
+                        MENUNGGU
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center w-1/3 py-3 px-4 bg-slate-800/80">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">TAMU</span>
+                        <span class="text-[8px] font-mono text-slate-300 bg-slate-900 px-2 py-0.5 rounded" id="roomDisplay">ID: ----</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="text-sm md:text-lg font-black text-white uppercase tracking-wider truncate" id="p2DisplayName">PEMAIN 2</span>
+                        <div class="w-2 h-2 rounded-full bg-slate-600" id="p2ColorIndicator"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Menu Utama -->
+        <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0">
+            <div class="premium-glass p-8 md:p-10 rounded-2xl max-w-md w-full mx-4">
+                <div class="text-center mb-8">
+                    <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-white mb-1">XX<span class="text-blue-500">PONG</span></h1>
+                    <p class="text-[10px] font-bold text-slate-400 tracking-[0.3em] uppercase">Arena Profesional</p>
+                </div>
+
+                <div id="alertBox" class="hidden mb-6 p-3 bg-red-900/80 border border-red-700 text-white rounded-lg text-xs font-bold text-center">
+                    Peringatan
+                </div>
+
+                <div id="setupSection" class="space-y-5">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Nama Pemain</label>
+                        <input type="text" id="playerName" placeholder="MASUKKAN NAMA" class="w-full px-4 py-3 text-sm font-bold uppercase text-center" maxlength="10">
+                    </div>
+
+                    <div class="pt-2 space-y-3">
+                        <button onclick="playAI()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors">
+                            LATIHAN VS AI
+                        </button>
+
+                        <button onclick="hostGame()" class="w-full btn-primary py-3 text-xs uppercase tracking-widest">
+                            BUAT PERTANDINGAN
+                        </button>
+                        
+                        <div class="flex items-center py-2">
+                            <div class="flex-grow border-t border-slate-600"></div>
+                            <span class="mx-3 text-slate-400 text-[10px] font-bold uppercase tracking-widest">ATAU GABUNG</span>
+                            <div class="flex-grow border-t border-slate-600"></div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <input type="text" id="joinId" placeholder="KODE RUANGAN" class="w-2/3 px-3 py-3 text-xs font-mono uppercase font-bold text-center">
+                            <button onclick="joinGame()" class="w-1/3 btn-secondary py-3 text-xs uppercase tracking-widest">
+                                GABUNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="waitingSection" class="hidden text-center space-y-6 py-4">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Bagikan Kode Akses</p>
+                        <div class="bg-slate-900 border border-slate-600 p-4 rounded-lg flex items-center justify-between">
+                            <span id="displayRoomId" class="font-mono text-lg font-black text-white tracking-widest">Memuat...</span>
+                            <button onclick="copyId()" id="copyBtn" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-[10px] font-bold text-white transition-colors">
+                                SALIN
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center space-y-4">
+                        <div class="w-10 h-10 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+                        <p class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Menunggu lawan...</p>
+                    </div>
+                    <button onclick="cancelMatch()" class="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors mt-2">Batalkan</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel Akhir Permainan -->
+        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-slate-900/95 z-50">
+            <p class="text-sm font-bold text-slate-400 mb-3 tracking-[0.4em] uppercase">PERTANDINGAN SELESAI</p>
+            <h2 class="text-6xl md:text-8xl font-black text-white mb-10 uppercase tracking-tighter" id="winnerText">PEMENANG</h2>
+            <button onclick="restartMatch()" class="btn-primary px-10 py-4 text-sm uppercase tracking-widest">
+                MAIN LAGI
+            </button>
+        </div>
+        
+        <div class="absolute bottom-6 left-0 w-full text-center pointer-events-none">
+            <p id="instructionText" class="text-[10px] font-bold text-slate-300 tracking-[0.3em] uppercase bg-slate-900/80 px-4 py-2 rounded-lg border border-slate-700 inline-block">GERAKKAN UNTUK BERMAIN • KLIK UNTUK SERVIS</p>
+        </div>
+    </div>
+
+    <script>
+        const menuPanel = document.getElementById('menuPanel');
+        const setupSection = document.getElementById('setupSection');
+        const waitingSection = document.getElementById('waitingSection');
+        const inGameHeader = document.getElementById('inGameHeader');
+        const gameOverPanel = document.getElementById('gameOverPanel');
+        const alertBox = document.getElementById('alertBox');
+        const instructionText = document.getElementById('instructionText');
+        
+        let isHost = false;
+        let isAI = false;
+        let myName = localStorage.getItem('xxpong_name') || 'PEMAIN';
+        document.getElementById('playerName').value = myName;
+        
+        let peer = null;
+        let conn = null;
+        let gameActive = false;
+        let rallyCount = 0;
+        let aiServeTimer = 0;
+
+        // State Utama Permainan
+        let state = {
+            status: 'menu', 
+            score: { p1: 0, p2: 0 },
+            server: 'p1', 
+            ball: { x: 0, y: 1.5, z: 0, vx: 0, vy: 0, vz: 0 },
+            p1: { x: 0, y: 1 }, 
+            p2: { x: 0, y: 1 }, 
+            winner: null,
+            lastHit: null,
+            tableHit: null
+        };
+
+        const MAX_SCORE = 11;
+        const TABLE_WIDTH = 15.25; 
+        const TABLE_LENGTH = 27.4; 
+        const TABLE_HEIGHT = 7.6; 
+        
+        function showAlert(msg) {
+            alertBox.textContent = msg;
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 3000);
+        }
+
+        // --- MANAJEMEN JARINGAN (PEERJS) ---
+        function initNetwork(callback) {
+            if (peer) peer.destroy();
+            peer = new Peer(null, { debug: 2 });
+            
+            peer.on('open', (id) => {
+                callback(id);
+            });
+            peer.on('error', (err) => {
+                showAlert("Kesalahan Koneksi");
+                cancelMatch();
+            });
+        }
+
+        function playAI() {
+            myName = document.getElementById('playerName').value.trim() || 'PEMAIN';
+            localStorage.setItem('xxpong_name', myName.toUpperCase());
+            isHost = true;
+            isAI = true;
+            
+            setupSection.classList.add('hidden');
+            startGameUI();
+            resetGame();
+        }
+
+        function hostGame() {
+            myName = document.getElementById('playerName').value.trim() || 'HOST';
+            localStorage.setItem('xxpong_name', myName.toUpperCase());
+            isHost = true;
+            isAI = false;
+            
+            setupSection.classList.add('hidden');
+            waitingSection.classList.remove('hidden');
+            
+            initNetwork((id) => {
+                document.getElementById('displayRoomId').textContent = id;
+                
+                peer.on('connection', (connection) => {
+                    if (conn) { connection.close(); return; }
+                    conn = connection;
+                    setupConnection();
+                });
+            });
+        }
+
+        function joinGame() {
+            const hostId = document.getElementById('joinId').value.trim();
+            if (!hostId) { showAlert("KODE RUANGAN DIBUTUHKAN"); return; }
+            
+            myName = document.getElementById('playerName').value.trim() || 'TAMU';
+            localStorage.setItem('xxpong_name', myName.toUpperCase());
+            isHost = false;
+            isAI = false;
+            
+            setupSection.classList.add('hidden');
+            
+            initNetwork((id) => {
+                conn = peer.connect(hostId, { reliable: true });
+                setupConnection();
+            });
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                conn.send({ type: 'init', name: myName });
+                startGameUI();
+            });
+
+            conn.on('data', (data) => {
+                if (isHost) {
+                    if (data.type === 'init') {
+                        document.getElementById('p2DisplayName').textContent = data.name.toUpperCase();
+                        resetGame(); 
+                    }
+                    if (data.type === 'paddleUpdate') {
+                        state.p2.x = data.x;
+                        state.p2.y = data.y;
+                    }
+                    if (data.type === 'serveRequest' && state.status === 'serve' && state.server === 'p2') {
+                        executeServe();
+                    }
+                } else {
+                    if (data.type === 'init') {
+                        document.getElementById('p1DisplayName').textContent = data.name.toUpperCase();
+                    }
+                    if (data.type === 'stateUpdate') {
+                        syncState(data.state);
+                    }
+                }
+            });
+
+            conn.on('close', () => {
+                showAlert("Lawan terputus.");
+                cancelMatch();
+            });
+        }
+
+        function copyId() {
+            const id = document.getElementById('displayRoomId').textContent;
+            navigator.clipboard.writeText(id).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'TERSALIN';
+                setTimeout(() => btn.textContent = 'SALIN', 2000);
+            });
+        }
+
+        function cancelMatch() {
+            if (conn) conn.close();
+            if (peer) peer.destroy();
+            setupSection.classList.remove('hidden');
+            waitingSection.classList.add('hidden');
+            menuPanel.classList.remove('hidden');
+            inGameHeader.classList.add('hidden');
+            gameOverPanel.classList.add('hidden');
+            instructionText.classList.remove('hidden');
+            gameActive = false;
+            isAI = false;
+        }
+
         function startGameUI() {
             menuPanel.classList.add('hidden');
             inGameHeader.classList.remove('hidden');
@@ -25,6 +397,8 @@
 
         // --- THREE.JS SETUP (Vibrant Colors Fix) ---
         const canvas = document.getElementById('gameCanvas');
+        
+        // Setup Renderer
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -32,7 +406,7 @@
         // FIX: Ensure correct color encoding so colors pop!
         renderer.outputEncoding = THREE.sRGBEncoding;
         
-        // Remove tone mapping to prevent washed-out look for standard colors
+        // FIX: Remove tone mapping to prevent washed-out look for standard colors
         renderer.toneMapping = THREE.NoToneMapping; 
 
         const scene = new THREE.Scene();
@@ -43,11 +417,11 @@
         camera.position.set(0, 16, 38); 
         camera.lookAt(0, -2, 0);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // Lighting yang disesuaikan
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Sedikit dikurangi agar tidak memutihkan warna meja
         scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xffffff, 0.8);
+        const spotLight = new THREE.SpotLight(0xffffff, 0.8); // Dikurangi intensity nya
         spotLight.position.set(0, 45, 0);
         spotLight.angle = Math.PI / 4;
         spotLight.penumbra = 0.5;
@@ -92,11 +466,12 @@
         // Table Group
         const tableGroup = new THREE.Group();
         
-        // Table Top (Professional Tournament Blue)
+        // FIX: Table Top (Professional Tournament Blue)
+        // Menggunakan roughness tinggi dan sedikit metalness agar warna birunya absolut
         const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
             color: 0x1e40af, // blue-800
-            roughness: 0.25,
+            roughness: 0.8,
             metalness: 0.1
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
@@ -105,7 +480,8 @@
         tableGroup.add(tableTop);
 
         // Table Lines (Sharp White)
-        const lineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+        // Menggunakan BasicMaterial agar putihnya solid
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.15, TABLE_LENGTH), lineMat);
         centerLine.rotation.x = -Math.PI / 2;
         centerLine.position.y = 0.26; 
@@ -130,7 +506,43 @@
 
         // Net
         function createNetTexture() {
-<!-- ... existing code ... -->
+            const c = document.createElement('canvas');
+            c.width = 1024;
+            c.height = 128;
+            const ctx = c.getContext('2d');
+            
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, 1024, 128);
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            for(let i=0; i<=1024; i+=12) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
+            for(let j=0; j<=128; j+=12) { ctx.moveTo(0, j); ctx.lineTo(1024, j); }
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 110, 1024, 18); 
+            
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1.0, 1.2);
+        const netMat = new THREE.MeshStandardMaterial({ 
+            map: createNetTexture(),
+            transparent: true,
+            side: THREE.DoubleSide,
+            alphaTest: 0.1,
+            color: 0xffffff
+        });
+        const net = new THREE.Mesh(netGeo, netMat);
+        net.position.y = 0.85;
+        tableGroup.add(net);
+        
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.2, roughness: 0.8 });
         const pole1 = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 16), poleMat);
         pole1.position.set(TABLE_WIDTH/2 + 0.4, 0.9, 0);
         pole1.castShadow = true;
@@ -186,12 +598,13 @@
         objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
         scene.add(objects.p2);
 
-        // Ball (High visibility yellow/orange)
+        // FIX: Ball (High visibility yellow/orange)
+        // Emissive ditambahkan agar warna kuningnya keluar walau tanpa pantulan cahaya yang kuat
         const ballGeo = new THREE.SphereGeometry(0.32, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
             color: 0xfde047, // yellow-300
             roughness: 0.2,
-            emissive: 0x444444
+            emissive: 0x444444 
         });
         objects.ball = new THREE.Mesh(ballGeo, ballMat);
         objects.ball.castShadow = true;
@@ -199,4 +612,315 @@
 
         function updateMousePos(e) {
             if (!gameActive) return;
-<!-- ... existing code ... -->
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            const aspectMultiplier = camera.aspect < 1 ? 0.7 : 1; 
+            const targetX = ((clientX / window.innerWidth) * 2 - 1) * 11 * aspectMultiplier;
+            const targetY = (-(clientY / window.innerHeight) * 2 + 1) * 5 + 4;
+
+            if (isHost) {
+                state.p1.x = targetX;
+                state.p1.y = targetY;
+            } else {
+                state.p2.x = -targetX; 
+                state.p2.y = targetY;
+                if (conn && conn.open && !isAI) {
+                    conn.send({ type: 'paddleUpdate', x: state.p2.x, y: state.p2.y });
+                }
+            }
+        }
+
+        window.addEventListener('pointermove', updateMousePos, {passive: false});
+        
+        window.addEventListener('pointerdown', () => {
+            if (!gameActive || state.status !== 'serve') return;
+            
+            if (isHost && state.server === 'p1') {
+                executeServe();
+            } else if (!isHost && state.server === 'p2') {
+                if (conn && conn.open && !isAI) conn.send({ type: 'serveRequest' });
+            }
+        });
+
+        const GRAVITY = 0.012; 
+
+        function resetGame() {
+            state.score = { p1: 0, p2: 0 };
+            state.server = 'p1';
+            state.winner = null;
+            gameOverPanel.classList.add('hidden');
+            setupServe();
+        }
+
+        function restartMatch() {
+            if (isHost || isAI) {
+                resetGame();
+            } else {
+                showAlert("Menunggu Tuan Rumah memulai ulang");
+            }
+        }
+
+        function setupServe() {
+            state.status = 'serve';
+            state.ball.vx = 0;
+            state.ball.vy = 0;
+            state.ball.vz = 0;
+            rallyCount = 0;
+            aiServeTimer = 0;
+            state.lastHit = null;
+            state.tableHit = null;
+            
+            state.ball.x = 0;
+            state.ball.y = 2.5;
+            state.ball.z = state.server === 'p1' ? (TABLE_LENGTH / 2 - 2) : -(TABLE_LENGTH / 2 - 2);
+            
+            updateStatusUI();
+        }
+
+        function executeServe() {
+            state.status = 'rally';
+            state.ball.vy = 0.28; 
+            state.ball.vz = state.server === 'p1' ? -0.32 : 0.32;
+            state.ball.vx = (Math.random() - 0.5) * 0.15; 
+            state.lastHit = state.server;
+            state.tableHit = null;
+            
+            updateStatusUI();
+        }
+
+        function updateStatusUI() {
+            const statusEl = document.getElementById('gameStatusText');
+            if (state.status === 'serve') {
+                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "GILIRAN SERVIS" : (isAI ? "BOT SERVIS" : "MENUNGGU");
+            } else if (state.status === 'rally') {
+                statusEl.textContent = `RELI: ${rallyCount}`;
+            }
+        }
+
+        function updatePhysics() {
+            if (!isHost || state.status !== 'rally') return;
+
+            const b = state.ball;
+            b.x += b.vx;
+            b.y += b.vy;
+            b.z += b.vz;
+
+            b.vy -= GRAVITY; 
+
+            // Pantulan meja
+            if (b.y <= 0.60 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+                if (b.vy < 0) {
+                    b.vy = Math.abs(b.vy) * 0.85; // Bouncing yang sedikit lebih alami
+                    b.y = 0.60;
+                    state.tableHit = (b.z > 0) ? 'p1' : 'p2';
+                }
+            }
+
+            // Pantulan net (diperbaiki agar tidak nyangkut)
+            if (Math.abs(b.z) < 0.6 && b.y < 2.0 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
+                if ((b.z > 0 && b.vz < 0) || (b.z < 0 && b.vz > 0)) {
+                    b.vz = -b.vz * 0.3; 
+                    b.z = b.z > 0 ? 0.65 : -0.65;
+                }
+            }
+
+            // FIX: Hitbox P1 diperbesar sedikit (presisi pukulan yang lebih memaafkan)
+            if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.8 && b.vz > 0) {
+                const dx = b.x - state.p1.x;
+                const dy = b.y - state.p1.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 3.2) { 
+                    b.vz = -0.40 - (rallyCount * 0.005); 
+                    b.vy = 0.24 + (state.p1.y - b.y) * 0.06; 
+                    b.vx = dx * 0.16; 
+                    rallyCount++;
+                    state.lastHit = 'p1';
+                    state.tableHit = null;
+                    updateStatusUI();
+                }
+            }
+
+            // FIX: Hitbox P2/AI
+            if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.8 && b.vz < 0) {
+                const dx = b.x - state.p2.x;
+                const dy = b.y - state.p2.y;
+                if (Math.sqrt(dx*dx + dy*dy) < 3.2) {
+                    b.vz = 0.40 + (rallyCount * 0.005); 
+                    b.vy = 0.24 + (state.p2.y - b.y) * 0.06;
+                    b.vx = dx * 0.16;
+                    rallyCount++;
+                    state.lastHit = 'p2';
+                    state.tableHit = null;
+                    updateStatusUI();
+                }
+            }
+
+            // Scoring
+            if (b.y < -4) {
+                if (state.lastHit === 'p1') {
+                    if (state.tableHit === 'p2') {
+                        state.score.p1++;
+                        state.server = 'p1'; 
+                    } else {
+                        state.score.p2++;
+                        state.server = 'p2';
+                    }
+                } else if (state.lastHit === 'p2') {
+                    if (state.tableHit === 'p1') {
+                        state.score.p2++;
+                        state.server = 'p2';
+                    } else {
+                        state.score.p1++;
+                        state.server = 'p1';
+                    }
+                } else {
+                    if (b.z > 0) {
+                        state.score.p2++;
+                        state.server = 'p2'; 
+                    } else {
+                        state.score.p1++;
+                        state.server = 'p1';
+                    }
+                }
+                
+                checkWinCondition();
+            }
+
+            // Gerakan AI
+            if (isAI) {
+                const aiTargetX = b.x;
+                const aiTargetY = Math.max(1.5, b.y - 0.2); 
+                const aiSpeed = 0.07 + (rallyCount * 0.004); 
+                
+                state.p2.x += (aiTargetX - state.p2.x) * aiSpeed;
+                state.p2.y += (aiTargetY - state.p2.y) * aiSpeed;
+            }
+
+            if (conn && conn.open && !isAI) {
+                conn.send({ type: 'stateUpdate', state: state });
+            }
+        }
+
+        function checkWinCondition() {
+            if (state.score.p1 >= MAX_SCORE) {
+                state.status = 'gameover';
+                state.winner = 'p1';
+            } else if (state.score.p2 >= MAX_SCORE) {
+                state.status = 'gameover';
+                state.winner = 'p2';
+            } else {
+                setupServe();
+            }
+            updateScoreUI();
+        }
+
+        function syncState(newState) {
+            const oldStatus = state.status;
+            state = newState;
+            updateScoreUI();
+            
+            if (oldStatus !== state.status) {
+                updateStatusUI();
+            }
+        }
+
+        function updateScoreUI() {
+            document.getElementById('scoreP1').textContent = String(state.score.p1).padStart(2, '0');
+            document.getElementById('scoreP2').textContent = String(state.score.p2).padStart(2, '0');
+
+            if (state.status === 'gameover') {
+                const wText = document.getElementById('winnerText');
+                if (state.winner === 'p1') {
+                    wText.textContent = document.getElementById('p1DisplayName').textContent;
+                    wText.className = "text-5xl md:text-6xl font-black text-red-500 mb-10 uppercase tracking-tighter truncate";
+                } else {
+                    wText.textContent = document.getElementById('p2DisplayName').textContent;
+                    wText.className = "text-5xl md:text-6xl font-black text-slate-300 mb-10 uppercase tracking-tighter truncate";
+                }
+                gameOverPanel.classList.remove('hidden');
+            } else {
+                gameOverPanel.classList.add('hidden');
+            }
+        }
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            
+            if (camera.aspect < 1) {
+                camera.fov = 75;
+                camera.position.set(0, 18, 42); 
+            } else {
+                camera.fov = 45;
+                camera.position.set(0, 16, 38);
+            }
+            
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function renderVisuals() {
+            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.25;
+            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.25;
+            objects.p1.rotation.y = -objects.p1.position.x * 0.04; 
+            objects.p1.rotation.z = objects.p1.position.x * 0.04;
+
+            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.25;
+            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.25;
+            objects.p2.rotation.y = -objects.p2.position.x * 0.04;
+            objects.p2.rotation.z = objects.p2.position.x * 0.04;
+
+            objects.ball.position.x = state.ball.x;
+            objects.ball.position.y = state.ball.y;
+            objects.ball.position.z = state.ball.z;
+
+            if (!isHost && !isAI) {
+                if (camera.aspect < 1) {
+                    camera.position.set(0, 18, -42);
+                } else {
+                    camera.position.set(0, 16, -38);
+                }
+                camera.lookAt(0, -2, 0);
+            } else {
+                if (camera.aspect < 1) {
+                    camera.position.set(0, 18, 42);
+                } else {
+                    camera.position.set(0, 16, 38);
+                }
+                camera.lookAt(0, -2, 0);
+            }
+        }
+
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            
+            if (gameActive) {
+                updatePhysics();
+                
+                if (isAI && state.status === 'serve' && state.server === 'p2') {
+                    aiServeTimer++;
+                    if (aiServeTimer > 60) {
+                        executeServe();
+                        aiServeTimer = 0;
+                    }
+                }
+            }
+            renderVisuals();
+            
+            renderer.render(scene, camera);
+        }
+
+        gameLoop();
+
+    </script>
+</body>
+</html>
