@@ -20,8 +20,8 @@
             margin: 0;
             overflow: hidden;
             font-family: 'Inter', sans-serif;
-            background-color: #f4f4f5; /* Tailwind zinc-100 */
-            color: #18181b; /* Tailwind zinc-900 */
+            background-color: #f8fafc;
+            color: #0f172a;
             touch-action: none;
         }
         
@@ -35,7 +35,6 @@
             z-index: 1;
         }
 
-        /* UI Overlays */
         #uiLayer {
             position: absolute;
             top: 0;
@@ -43,169 +42,153 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            pointer-events: none; /* Biarkan klik tembus ke canvas saat main */
+            pointer-events: none;
         }
         
-        /* Menu Panel harus bisa diklik */
         .interactive-ui {
             pointer-events: auto;
         }
 
-        /* Glassmorphism style untuk menu */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.5);
         }
 
-        /* Animasi Ping */
         @keyframes pulse-dot {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
         .status-dot {
             height: 10px; width: 10px;
-            background-color: #22c55e;
+            background-color: #10b981;
             border-radius: 50%;
             display: inline-block;
             animation: pulse-dot 2s infinite;
         }
 
-        /* Custom Input Styling */
         input:focus {
             outline: none;
-            border-color: #3f3f46;
-            box-shadow: 0 0 0 3px rgba(63, 63, 70, 0.1);
+            border-color: #0f172a;
+            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
         }
     </style>
 </head>
 <body>
 
-    <!-- 3D Canvas -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- UI Layer -->
     <div id="uiLayer" class="flex flex-col justify-between p-6 md:p-10">
         
-        <!-- Header In-Game (Awalnya Sembunyi) -->
         <div id="inGameHeader" class="hidden flex justify-between items-start w-full max-w-6xl mx-auto">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-red-500 shadow-lg flex items-center justify-center text-white font-bold" id="p1Avatar">P1</div>
+            <div class="flex items-center space-x-3 bg-white/70 backdrop-blur-md p-2 pr-5 rounded-full shadow-sm border border-slate-200">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-md flex items-center justify-center text-white font-bold" id="p1Avatar">P1</div>
                 <div>
-                    <h2 id="p1NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-zinc-800">HOST</h2>
-                    <p class="text-xs text-zinc-500 font-semibold" id="roomDisplay">Room: ----</p>
+                    <h2 id="p1NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-slate-800 leading-tight">HOST</h2>
+                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest" id="roomDisplay">Room: ----</p>
                 </div>
             </div>
             
-            <!-- Score Board (Tengah) -->
-            <div class="flex flex-col items-center">
-                <p class="text-xs font-bold tracking-widest text-zinc-400 mb-1">MATCH SCORE</p>
-                <div class="flex items-baseline space-x-4">
-                    <span id="scoreP1" class="text-5xl md:text-6xl font-extrabold text-zinc-800">00</span>
-                    <span class="text-2xl text-zinc-300">-</span>
-                    <span id="scoreP2" class="text-5xl md:text-6xl font-extrabold text-zinc-800">00</span>
+            <div class="flex flex-col items-center bg-white/70 backdrop-blur-md px-8 py-3 rounded-3xl shadow-sm border border-slate-200">
+                <p class="text-[10px] font-bold tracking-[0.2em] text-slate-400 mb-1">SCORE</p>
+                <div class="flex items-baseline space-x-6">
+                    <span id="scoreP1" class="text-5xl md:text-6xl font-black text-slate-800 tracking-tighter">00</span>
+                    <span class="text-xl text-slate-300">-</span>
+                    <span id="scoreP2" class="text-5xl md:text-6xl font-black text-slate-800 tracking-tighter">00</span>
                 </div>
-                <div id="gameStatusText" class="mt-2 px-3 py-1 bg-white/50 rounded-full text-xs font-bold text-zinc-600 shadow-sm backdrop-blur-sm">
+                <div id="gameStatusText" class="mt-3 px-4 py-1.5 bg-slate-800 rounded-full text-[10px] font-bold text-white shadow-md uppercase tracking-wider">
                     WAITING TO SERVE
                 </div>
             </div>
 
-            <div class="flex items-center space-x-3 text-right">
+            <div class="flex items-center space-x-3 text-right bg-white/70 backdrop-blur-md p-2 pl-5 rounded-full shadow-sm border border-slate-200">
                 <div>
-                    <h2 id="p2NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-zinc-800">GUEST</h2>
-                    <p class="text-xs text-zinc-500 font-semibold flex items-center justify-end space-x-1">
+                    <h2 id="p2NameLabel" class="font-bold text-sm md:text-base uppercase tracking-wider text-slate-800 leading-tight">GUEST</h2>
+                    <p class="text-[10px] text-slate-500 font-semibold flex items-center justify-end space-x-1.5 uppercase tracking-widest">
                         <span>Connected</span>
                         <span class="status-dot"></span>
                     </p>
                 </div>
-                <div class="w-10 h-10 rounded-full bg-slate-800 shadow-lg flex items-center justify-center text-white font-bold" id="p2Avatar">P2</div>
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 shadow-md flex items-center justify-center text-white font-bold" id="p2Avatar">P2</div>
             </div>
         </div>
 
-        <!-- Main Menu Panel -->
         <div id="menuPanel" class="interactive-ui flex-1 flex items-center justify-center absolute inset-0">
-            <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-md w-full mx-4 relative overflow-hidden">
-                <!-- Dekorasi UI -->
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-red-400 rounded-full opacity-10 blur-3xl"></div>
-                <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
+            <div class="glass-panel p-8 md:p-12 rounded-[2rem] max-w-md w-full mx-4 relative overflow-hidden">
+                <div class="absolute -top-16 -right-16 w-48 h-48 bg-rose-400 rounded-full opacity-20 blur-3xl"></div>
+                <div class="absolute -bottom-16 -left-16 w-48 h-48 bg-indigo-400 rounded-full opacity-20 blur-3xl"></div>
 
-                <div class="text-center mb-8 relative z-10">
-                    <h1 class="text-4xl font-extrabold tracking-tighter text-zinc-900 mb-1">RALLY <span class="text-red-500">3D</span></h1>
-                    <p class="text-sm font-medium text-zinc-500 tracking-widest uppercase">The Everyday Club</p>
+                <div class="text-center mb-10 relative z-10">
+                    <h1 class="text-5xl font-black tracking-tighter text-slate-900 mb-2">RALLY <span class="text-rose-500">3D</span></h1>
+                    <p class="text-xs font-bold text-slate-400 tracking-[0.2em] uppercase">The Everyday Club</p>
                 </div>
 
-                <div id="alertBox" class="hidden mb-6 p-3 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm font-medium text-center">
+                <div id="alertBox" class="hidden mb-6 p-4 bg-rose-50 text-rose-600 rounded-xl border border-rose-100 text-sm font-bold text-center shadow-sm">
                     Alert Message Here
                 </div>
 
-                <!-- Input Setup -->
-                <div id="setupSection" class="space-y-5 relative z-10">
+                <div id="setupSection" class="space-y-6 relative z-10">
                     <div>
-                        <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Player Name</label>
-                        <input type="text" id="playerName" placeholder="Enter your name" class="w-full bg-white/80 border-2 border-zinc-200 rounded-xl px-4 py-3 text-zinc-800 font-semibold transition-all" maxlength="10">
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 pl-1">Player Name</label>
+                        <input type="text" id="playerName" placeholder="Enter your name" class="w-full bg-slate-50/50 border-2 border-slate-200 rounded-2xl px-5 py-4 text-slate-800 font-bold transition-all focus:bg-white" maxlength="10">
                     </div>
 
-                    <div class="pt-4 space-y-3">
-                        <button onclick="hostGame()" class="w-full bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-4 rounded-xl shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95">
+                    <div class="pt-2 space-y-4">
+                        <button onclick="hostGame()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-lg shadow-slate-900/20 transition-transform transform hover:scale-[1.02] active:scale-95 tracking-wide">
                             CREATE ROOM (HOST)
                         </button>
                         
                         <div class="relative flex items-center py-2">
-                            <div class="flex-grow border-t border-zinc-300"></div>
-                            <span class="flex-shrink-0 mx-4 text-zinc-400 text-xs font-bold uppercase tracking-wider">OR</span>
-                            <div class="flex-grow border-t border-zinc-300"></div>
+                            <div class="flex-grow border-t border-slate-200"></div>
+                            <span class="flex-shrink-0 mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">OR JOIN ROOM</span>
+                            <div class="flex-grow border-t border-slate-200"></div>
                         </div>
 
-                        <div class="flex space-x-2">
-                            <input type="text" id="joinId" placeholder="Paste Room ID" class="w-2/3 bg-white/80 border-2 border-zinc-200 rounded-xl px-4 py-3 text-zinc-800 font-mono text-sm transition-all uppercase">
-                            <button onclick="joinGame()" class="w-1/3 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl shadow-lg transition-transform transform hover:scale-[1.02] active:scale-95">
+                        <div class="flex space-x-3">
+                            <input type="text" id="joinId" placeholder="Room ID" class="w-2/3 bg-slate-50/50 border-2 border-slate-200 rounded-2xl px-5 py-4 text-slate-800 font-mono text-sm transition-all focus:bg-white uppercase">
+                            <button onclick="joinGame()" class="w-1/3 bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-rose-500/20 transition-transform transform hover:scale-[1.02] active:scale-95 tracking-wide">
                                 JOIN
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Waiting Room (Host Only) -->
-                <div id="waitingSection" class="hidden text-center space-y-6 relative z-10 py-4">
+                <div id="waitingSection" class="hidden text-center space-y-8 relative z-10 py-6">
                     <div>
-                        <p class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Your Room ID</p>
-                        <div class="bg-zinc-100 border-2 border-zinc-200 p-4 rounded-xl flex items-center justify-between">
-                            <span id="displayRoomId" class="font-mono text-lg font-bold text-zinc-800 tracking-wider">Loading...</span>
-                            <button onclick="copyId()" id="copyBtn" class="bg-white border border-zinc-200 shadow-sm px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Your Room ID</p>
+                        <div class="bg-slate-50 border-2 border-slate-200 p-5 rounded-2xl flex items-center justify-between">
+                            <span id="displayRoomId" class="font-mono text-xl font-black text-slate-800 tracking-wider">Loading...</span>
+                            <button onclick="copyId()" id="copyBtn" class="bg-white border-2 border-slate-200 shadow-sm px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">
                                 COPY
                             </button>
                         </div>
                     </div>
-                    <div class="flex flex-col items-center space-y-3">
-                        <div class="w-8 h-8 border-4 border-zinc-200 border-t-red-500 rounded-full animate-spin"></div>
-                        <p class="text-sm font-medium text-zinc-500">Waiting for opponent...</p>
+                    <div class="flex flex-col items-center space-y-4">
+                        <div class="w-10 h-10 border-4 border-slate-200 border-t-rose-500 rounded-full animate-spin"></div>
+                        <p class="text-xs font-bold tracking-wider text-slate-500 uppercase">Waiting for opponent...</p>
                     </div>
-                    <button onclick="cancelMatch()" class="text-xs font-bold text-zinc-400 hover:text-red-500 uppercase tracking-wider">Cancel</button>
+                    <button onclick="cancelMatch()" class="text-[10px] font-bold text-slate-400 hover:text-rose-500 uppercase tracking-widest transition-colors">Cancel</button>
                 </div>
             </div>
         </div>
         
-        <!-- Game Over UI -->
-        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-white/80 backdrop-blur-md">
-            <h2 class="text-6xl font-black text-zinc-900 mb-2 uppercase tracking-tighter" id="winnerText">WINNER</h2>
-            <p class="text-lg font-bold text-zinc-500 mb-8 tracking-widest">WINS THE MATCH</p>
-            <button onclick="restartMatch()" class="bg-red-500 hover:bg-red-600 text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-red-500/30 transition-transform transform hover:scale-105">
+        <div id="gameOverPanel" class="hidden interactive-ui flex-1 flex flex-col items-center justify-center absolute inset-0 bg-white/90 backdrop-blur-xl">
+            <h2 class="text-7xl font-black text-slate-900 mb-3 uppercase tracking-tighter" id="winnerText">WINNER</h2>
+            <p class="text-sm font-bold text-slate-500 mb-10 tracking-[0.3em]">WINS THE MATCH</p>
+            <button onclick="restartMatch()" class="bg-rose-500 hover:bg-rose-600 text-white px-12 py-5 rounded-full font-black shadow-xl shadow-rose-500/30 transition-transform transform hover:scale-105 tracking-wide">
                 PLAY AGAIN
             </button>
         </div>
         
-        <!-- Footer Info -->
-        <div class="absolute bottom-4 left-0 w-full text-center pointer-events-none">
-            <p class="text-xs font-semibold text-zinc-400 tracking-widest">MOVE MOUSE TO PLAY • CLICK TO SERVE</p>
+        <div class="absolute bottom-6 left-0 w-full text-center pointer-events-none">
+            <p class="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase bg-white/50 backdrop-blur-sm inline-block px-4 py-2 rounded-full">MOVE MOUSE TO PLAY • CLICK TO SERVE</p>
         </div>
     </div>
 
-    <!-- MAIN LOGIC (Three.js + PeerJS) -->
     <script>
-        // -- UI Elements --
         const menuPanel = document.getElementById('menuPanel');
         const setupSection = document.getElementById('setupSection');
         const waitingSection = document.getElementById('waitingSection');
@@ -213,7 +196,6 @@
         const gameOverPanel = document.getElementById('gameOverPanel');
         const alertBox = document.getElementById('alertBox');
         
-        // -- Game Variables --
         let isHost = false;
         let myName = localStorage.getItem('rally_name') || 'Player';
         document.getElementById('playerName').value = myName;
@@ -221,25 +203,22 @@
         let peer = null;
         let conn = null;
         let gameActive = false;
-        let lastTime = 0;
-        let mouseX = 0;
-        let mouseY = 0;
+        let rallyCount = 0;
 
-        // Game State (Diatur oleh Host)
         let state = {
-            status: 'menu', // menu, serve, rally, gameover
+            status: 'menu', 
             score: { p1: 0, p2: 0 },
-            server: 'p1', // siapa yang servis
+            server: 'p1', 
             ball: { x: 0, y: 1.5, z: 0, vx: 0, vy: 0, vz: 0 },
-            p1: { x: 0, y: 1 }, // Host (Red)
-            p2: { x: 0, y: 1 }, // Guest (Blue)
+            p1: { x: 0, y: 1 }, 
+            p2: { x: 0, y: 1 }, 
             winner: null
         };
 
         const MAX_SCORE = 11;
         const TABLE_WIDTH = 15;
         const TABLE_LENGTH = 27;
-        const TABLE_HEIGHT = 7.6; // Ketinggian meja dari lantai
+        const TABLE_HEIGHT = 7.6; 
         
         function showAlert(msg) {
             alertBox.textContent = msg;
@@ -297,7 +276,6 @@
 
         function setupConnection() {
             conn.on('open', () => {
-                // Send Name
                 conn.send({ type: 'init', name: myName });
                 startGameUI();
             });
@@ -307,7 +285,7 @@
                     if (data.type === 'init') {
                         document.getElementById('p2NameLabel').textContent = data.name;
                         document.getElementById('p2Avatar').textContent = data.name.charAt(0).toUpperCase();
-                        resetGame(); // Mulai game
+                        resetGame(); 
                     }
                     if (data.type === 'paddleUpdate') {
                         state.p2.x = data.x;
@@ -357,7 +335,6 @@
             menuPanel.classList.add('hidden');
             inGameHeader.classList.remove('hidden');
             
-            // Set own info
             if (isHost) {
                 document.getElementById('p1NameLabel').textContent = myName;
                 document.getElementById('p1Avatar').textContent = myName.charAt(0).toUpperCase();
@@ -369,29 +346,27 @@
             }
             
             gameActive = true;
-            resizeCanvas(); // Ensure 3D is sized correctly
+            resizeCanvas(); 
         }
 
         const canvas = document.getElementById('gameCanvas');
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Shadow yang lembut
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
 
         const scene = new THREE.Scene();
-        // Background color (sama dengan CSS body)
-        scene.background = new THREE.Color('#f4f4f5'); 
+        scene.background = new THREE.Color('#f8fafc'); 
+        scene.fog = new THREE.Fog('#f8fafc', 25, 70); 
 
-        // Kamera: Sudut pandang persis seperti video (dari belakang Host, sedikit di atas meja)
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 15, 30); 
+        camera.position.set(0, 16, 32); 
         camera.lookAt(0, 0, 0);
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        dirLight.position.set(10, 25, 10);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        dirLight.position.set(12, 35, 15);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
@@ -399,105 +374,95 @@
         dirLight.shadow.camera.right = 20;
         dirLight.shadow.camera.top = 20;
         dirLight.shadow.camera.bottom = -20;
+        dirLight.shadow.bias = -0.001;
         scene.add(dirLight);
 
         const objects = {};
 
-        // 1. Lantai (Hanya untuk menerima bayangan agar terlihat grounded)
-        const floorGeo = new THREE.PlaneGeometry(100, 100);
-        const floorMat = new THREE.ShadowMaterial({ opacity: 0.1 });
+        const floorGeo = new THREE.PlaneGeometry(120, 120);
+        const floorMat = new THREE.ShadowMaterial({ opacity: 0.08 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -TABLE_HEIGHT; // Lantai ada di bawah meja
+        floor.position.y = -TABLE_HEIGHT; 
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // 2. Meja (Dark Green, Aesthetic)
         const tableGroup = new THREE.Group();
         
-        // Permukaan Meja
-        const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
+        const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.6, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: '#2d6a4f', // Aesthetic dark green
-            roughness: 0.4,
-            metalness: 0.1
+            color: '#14532d', 
+            roughness: 0.25,
+            metalness: 0.15
         });
         const tableTop = new THREE.Mesh(tableTopGeo, tableTopMat);
         tableTop.receiveShadow = true;
         tableTop.castShadow = true;
         tableGroup.add(tableTop);
 
-        // Garis Putih (Tengah, Pinggir)
-        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, TABLE_LENGTH), lineMat);
+        const lineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+        const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, TABLE_LENGTH), lineMat);
         centerLine.rotation.x = -Math.PI / 2;
-        centerLine.position.y = 0.26; // Sedikit di atas meja
+        centerLine.position.y = 0.31; 
         tableGroup.add(centerLine);
 
-        const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.4, 0.6, TABLE_LENGTH + 0.4);
-        const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        const borderGeo = new THREE.BoxGeometry(TABLE_WIDTH + 0.5, 0.7, TABLE_LENGTH + 0.5);
+        const borderMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
         const tableBorder = new THREE.Mesh(borderGeo, borderMat);
         tableBorder.position.y = -0.05;
         tableGroup.add(tableBorder);
 
-        // Net
-        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1, 1.5);
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 1.5, 1.4);
         const netMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff, 
             transparent: true, 
-            opacity: 0.4, 
+            opacity: 0.35, 
             side: THREE.DoubleSide,
-            wireframe: true // Efek jaring
+            wireframe: true 
         });
         const net = new THREE.Mesh(netGeo, netMat);
-        net.position.y = 1;
+        net.position.y = 1.0;
         tableGroup.add(net);
 
         scene.add(tableGroup);
 
-        // 3. Paddles (Raket bentuk bundar)
         function createPaddle(colorHex) {
             const group = new THREE.Group();
             
-            // Karet raket (Silinder dipipihkan)
-            const padGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.3, 32);
-            const padMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.7 });
+            const padGeo = new THREE.CylinderGeometry(1.6, 1.6, 0.35, 32);
+            const padMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.6, metalness: 0.1 });
             const pad = new THREE.Mesh(padGeo, padMat);
-            pad.rotation.x = Math.PI / 2; // Berdirikan
+            pad.rotation.x = Math.PI / 2; 
             pad.castShadow = true;
             group.add(pad);
 
-            // Gagang Kayu
-            const handleGeo = new THREE.BoxGeometry(0.6, 2, 0.4);
-            const handleMat = new THREE.MeshStandardMaterial({ color: '#d4a373' });
+            const handleGeo = new THREE.BoxGeometry(0.7, 2.2, 0.45);
+            const handleMat = new THREE.MeshStandardMaterial({ color: '#b45309', roughness: 0.8 });
             const handle = new THREE.Mesh(handleGeo, handleMat);
-            handle.position.y = -2;
+            handle.position.y = -2.1;
             handle.castShadow = true;
             group.add(handle);
 
             return group;
         }
 
-        objects.p1 = createPaddle('#ef4444'); // Red (Host)
+        objects.p1 = createPaddle('#e11d48'); 
         objects.p1.position.z = TABLE_LENGTH / 2 + 1;
         scene.add(objects.p1);
 
-        objects.p2 = createPaddle('#1e293b'); // Dark Slate (Guest)
+        objects.p2 = createPaddle('#0f172a'); 
         objects.p2.position.z = -(TABLE_LENGTH / 2) - 1;
         scene.add(objects.p2);
 
-        // 4. Bola
-        const ballGeo = new THREE.SphereGeometry(0.3, 32, 32);
-        const ballMat = new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.2 });
+        const ballGeo = new THREE.SphereGeometry(0.35, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({ color: '#f97316', roughness: 0.2, metalness: 0.3 });
         objects.ball = new THREE.Mesh(ballGeo, ballMat);
         objects.ball.castShadow = true;
         scene.add(objects.ball);
 
-        // Mapping koordinat layar ke koordinat bidang raket 3D
         function updateMousePos(e) {
             if (!gameActive) return;
             
-            // Normalized Device Coordinates (-1 to +1)
             let clientX = e.clientX;
             let clientY = e.clientY;
             
@@ -506,18 +471,15 @@
                 clientY = e.touches[0].clientY;
             }
 
-            // Map layar X ke pergerakan Meja X (-8 to +8)
-            const targetX = ((clientX / window.innerWidth) * 2 - 1) * 10;
-            // Map layar Y ke pergerakan Ketinggian Y (1 to 6)
-            const targetY = (-(clientY / window.innerHeight) * 2 + 1) * 4 + 3;
+            const targetX = ((clientX / window.innerWidth) * 2 - 1) * 10.5;
+            const targetY = (-(clientY / window.innerHeight) * 2 + 1) * 4.5 + 3.5;
 
             if (isHost) {
                 state.p1.x = targetX;
                 state.p1.y = targetY;
             } else {
-                state.p2.x = -targetX; // Guest melihat dari sisi berlawanan, invers X
+                state.p2.x = -targetX; 
                 state.p2.y = targetY;
-                // Kirim posisi ke host
                 if (conn && conn.open) {
                     conn.send({ type: 'paddleUpdate', x: state.p2.x, y: state.p2.y });
                 }
@@ -527,7 +489,6 @@
         window.addEventListener('mousemove', updateMousePos);
         window.addEventListener('touchmove', updateMousePos, {passive: false});
         
-        // Serve Action
         window.addEventListener('pointerdown', () => {
             if (!gameActive || state.status !== 'serve') return;
             
@@ -538,8 +499,7 @@
             }
         });
 
-        const GRAVITY = 0.015;
-        let rallyCount = 0;
+        const GRAVITY = 0.012;
 
         function resetGame() {
             state.score = { p1: 0, p2: 0 };
@@ -564,9 +524,8 @@
             state.ball.vz = 0;
             rallyCount = 0;
             
-            // Tempatkan bola melayang di atas meja pihak yang serve
             state.ball.x = 0;
-            state.ball.y = 2;
+            state.ball.y = 2.5;
             state.ball.z = state.server === 'p1' ? (TABLE_LENGTH / 2 - 2) : -(TABLE_LENGTH / 2 - 2);
             
             updateStatusUI();
@@ -574,12 +533,9 @@
 
         function executeServe() {
             state.status = 'rally';
-            // Pukulan Serve awal melengkung ke atas
-            state.ball.vy = 0.3; 
-            // Arah ke lawan
-            state.ball.vz = state.server === 'p1' ? -0.4 : 0.4;
-            // Sedikit menyamping acak
-            state.ball.vx = (Math.random() - 0.5) * 0.2; 
+            state.ball.vy = 0.25; 
+            state.ball.vz = state.server === 'p1' ? -0.3 : 0.3;
+            state.ball.vx = (Math.random() - 0.5) * 0.15; 
             
             updateStatusUI();
         }
@@ -587,11 +543,11 @@
         function updateStatusUI() {
             const statusEl = document.getElementById('gameStatusText');
             if (state.status === 'serve') {
-                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR TURN TO SERVE (CLICK)" : "WAITING FOR OPPONENT TO SERVE";
-                statusEl.classList.replace('text-green-600', 'text-zinc-600');
+                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR TURN TO SERVE" : "WAITING FOR OPPONENT";
+                statusEl.classList.replace('bg-emerald-500', 'bg-slate-800');
             } else if (state.status === 'rally') {
                 statusEl.textContent = `RALLY: ${rallyCount}`;
-                statusEl.classList.replace('text-zinc-600', 'text-green-600');
+                statusEl.classList.replace('bg-slate-800', 'bg-emerald-500');
             }
         }
 
@@ -603,57 +559,50 @@
             b.y += b.vy;
             b.z += b.vz;
 
-            b.vy -= GRAVITY; // Terapkan gravitasi
+            b.vy -= GRAVITY; 
 
-            // 1. Pantulan Meja (Y-axis)
-            if (b.y <= 0.55 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+            if (b.y <= 0.65 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
                 if (b.vy < 0) {
-                    b.vy = Math.abs(b.vy) * 0.85; // Bounciness
-                    b.y = 0.55;
+                    b.vy = Math.abs(b.vy) * 0.82; 
+                    b.y = 0.65;
                 }
             }
 
-            // 2. Tabrakan Net (Z = 0)
-            if (Math.abs(b.z) < 0.5 && b.y < 2 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
-                b.vz = -b.vz * 0.5; // Membentur net
+            if (Math.abs(b.z) < 0.6 && b.y < 2.2 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
+                b.vz = -b.vz * 0.4; 
             }
 
-            // 3. Tabrakan Paddle 1 (Host - Z positif)
-            // Cek apakah bola mendekati area Z paddle host
-            if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.5 && b.vz > 0) {
-                // Hitbox silinder sederhana: Cek jarak X dan Y bola ke pusat paddle
+            const speedIncrement = rallyCount * 0.008;
+
+            if (b.z > TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 + 1.8 && b.vz > 0) {
                 const dx = b.x - state.p1.x;
                 const dy = b.y - state.p1.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 2.5) { // Radius paddle + toleransi
-                    b.vz = -(0.5 + (rallyCount * 0.02)); // Balik arah dengan speed bertambah
-                    b.vy = 0.35 + (state.p1.y - b.y) * 0.1; // Efek pantulan atas berdasarkan posisi pukul
-                    b.vx = -dx * 0.15; // Efek samping
+                if (Math.sqrt(dx*dx + dy*dy) < 2.6) { 
+                    b.vz = -(0.35 + speedIncrement); 
+                    b.vy = 0.3 + (state.p1.y - b.y) * 0.08; 
+                    b.vx = -dx * 0.12; 
                     rallyCount++;
                     updateStatusUI();
                 }
             }
 
-            // 4. Tabrakan Paddle 2 (Guest - Z negatif)
-            if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.5 && b.vz < 0) {
+            if (b.z < -TABLE_LENGTH/2 && b.z > -TABLE_LENGTH/2 - 1.8 && b.vz < 0) {
                 const dx = b.x - state.p2.x;
                 const dy = b.y - state.p2.y;
-                if (Math.sqrt(dx*dx + dy*dy) < 2.5) {
-                    b.vz = 0.5 + (rallyCount * 0.02);
-                    b.vy = 0.35 + (state.p2.y - b.y) * 0.1;
-                    b.vx = -dx * 0.15;
+                if (Math.sqrt(dx*dx + dy*dy) < 2.6) {
+                    b.vz = 0.35 + speedIncrement;
+                    b.vy = 0.3 + (state.p2.y - b.y) * 0.08;
+                    b.vx = -dx * 0.12;
                     rallyCount++;
                     updateStatusUI();
                 }
             }
 
-            // 5. Cek Point (Bola jatuh dari meja)
-            if (b.y < -3) {
+            if (b.y < -4) {
                 if (b.z > 0) {
-                    // Jatuh di sisi P1, P2 dapet poin
                     state.score.p2++;
-                    state.server = 'p2'; // Yang menang poin servis
+                    state.server = 'p2'; 
                 } else {
-                    // Jatuh di sisi P2, P1 dapet poin
                     state.score.p1++;
                     state.server = 'p1';
                 }
@@ -661,9 +610,7 @@
                 checkWinCondition();
             }
 
-            // Kirim State ke Guest
             if (conn && conn.open) {
-                // Untuk guest, kita inversi orientasi agar dia merasa bermain dari sisi kemeranya
                 conn.send({ type: 'stateUpdate', state: state });
             }
         }
@@ -692,8 +639,6 @@
         }
 
         function updateScoreUI() {
-            // Jika host, P1 adalah diri sendiri (kiri). Jika guest, diri sendiri (P2) tetep taruh kiri layar?
-            // Biasanya tampilan skor tetep Host (Kiri) - Guest (Kanan) untuk konsistensi.
             document.getElementById('scoreP1').textContent = String(state.score.p1).padStart(2, '0');
             document.getElementById('scoreP2').textContent = String(state.score.p2).padStart(2, '0');
 
@@ -701,10 +646,10 @@
                 const wText = document.getElementById('winnerText');
                 if (state.winner === 'p1') {
                     wText.textContent = document.getElementById('p1NameLabel').textContent;
-                    wText.className = "text-6xl font-black text-red-500 mb-2 uppercase tracking-tighter";
+                    wText.className = "text-7xl font-black text-rose-500 mb-3 uppercase tracking-tighter";
                 } else {
                     wText.textContent = document.getElementById('p2NameLabel').textContent;
-                    wText.className = "text-6xl font-black text-slate-800 mb-2 uppercase tracking-tighter";
+                    wText.className = "text-7xl font-black text-slate-800 mb-3 uppercase tracking-tighter";
                 }
                 gameOverPanel.classList.remove('hidden');
             } else {
@@ -724,34 +669,27 @@
         resizeCanvas();
 
         function renderVisuals() {
-            // Update Paddle 1
-            // Smooth movement (lerp)
-            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.2;
-            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.2;
+            objects.p1.position.x += (state.p1.x - objects.p1.position.x) * 0.25;
+            objects.p1.position.y += (state.p1.y - objects.p1.position.y) * 0.25;
             
-            // Rotasi paddle menyesuaikan posisi X agar terlihat dinamis
-            objects.p1.rotation.y = -objects.p1.position.x * 0.05; 
-            objects.p1.rotation.z = objects.p1.position.x * 0.05;
+            objects.p1.rotation.y = -objects.p1.position.x * 0.04; 
+            objects.p1.rotation.z = objects.p1.position.x * 0.04;
 
-            // Update Paddle 2 (Guest)
-            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.2;
-            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.2;
+            objects.p2.position.x += (state.p2.x - objects.p2.position.x) * 0.25;
+            objects.p2.position.y += (state.p2.y - objects.p2.position.y) * 0.25;
             
-            objects.p2.rotation.y = -objects.p2.position.x * 0.05;
-            objects.p2.rotation.z = objects.p2.position.x * 0.05;
+            objects.p2.rotation.y = -objects.p2.position.x * 0.04;
+            objects.p2.rotation.z = objects.p2.position.x * 0.04;
 
-            // Update Ball
             objects.ball.position.x = state.ball.x;
             objects.ball.position.y = state.ball.y;
             objects.ball.position.z = state.ball.z;
 
-            // Kamera Management
             if (!isHost) {
-                // Balik posisi kamera 180 derajat untuk Guest agar melihat dari sisi P2
-                camera.position.set(0, 15, -30);
+                camera.position.set(0, 16, -32);
                 camera.lookAt(0, 0, 0);
             } else {
-                camera.position.set(0, 15, 30);
+                camera.position.set(0, 16, 32);
                 camera.lookAt(0, 0, 0);
             }
         }
@@ -767,7 +705,6 @@
             renderer.render(scene, camera);
         }
 
-        // Mulai Loop Animasi
         gameLoop();
 
     </script>
