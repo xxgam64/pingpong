@@ -91,7 +91,7 @@
                     <span class="text-gray-700 font-black text-xl">-</span>
                     <span id="scoreP2" class="text-3xl md:text-5xl font-black text-white tracking-tighter">00</span>
                 </div>
-                <div id="gameStatusText" class="mt-1 text-[9px] md:text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-900/20 px-3 py-1 rounded">
+                <div id="gameStatusText" class="mt-1 text-[9px] md:text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-900/20 px-3 py-1 rounded border border-red-900/50">
                     WAITING
                 </div>
             </div>
@@ -444,10 +444,10 @@
         // Table Group
         const tableGroup = new THREE.Group();
         
-        // Table Top (Professional Tournament Blue)
+        // Table Top (Professional Tournament Blue - Blue 800)
         const tableTopGeo = new THREE.BoxGeometry(TABLE_WIDTH, 0.5, TABLE_LENGTH);
         const tableTopMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1e40af, // blue-800
+            color: 0x1e40af, // The requested blue color
             roughness: 0.25,
             metalness: 0.1
         });
@@ -499,39 +499,36 @@
 
         function createNetTexture() {
             const c = document.createElement('canvas');
-            c.width = 1024;
+            c.width = 512;
             c.height = 128;
             const ctx = c.getContext('2d');
-            ctx.clearRect(0, 0, 1024, 128);
-            
-            // Dark mesh
-            ctx.strokeStyle = 'rgba(20,20,20,0.8)';
+            ctx.clearRect(0, 0, 512, 128);
+            ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            for(let i=0; i<=1024; i+=8) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
-            for(let j=0; j<=128; j+=8) { ctx.moveTo(0, j); ctx.lineTo(1024, j); }
+            for(let i=0; i<=512; i+=12) { ctx.moveTo(i, 0); ctx.lineTo(i, 128); }
+            for(let j=0; j<=128; j+=12) { ctx.moveTo(0, j); ctx.lineTo(512, j); }
             ctx.stroke();
-            
-            // Bright white top band
             ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 110, 1024, 18); 
-            
+            ctx.fillRect(0, 0, 512, 16); 
             const tex = new THREE.CanvasTexture(c);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(2, 1);
             return tex;
         }
 
-        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 0.6, 1.2);
+        const netGeo = new THREE.PlaneGeometry(TABLE_WIDTH + 0.8, 1.2);
         const netMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
             map: createNetTexture(),
             transparent: true, 
+            opacity: 0.8, 
             side: THREE.DoubleSide,
-            alphaTest: 0.1,
-            roughness: 0.8
+            alphaTest: 0.1
         });
         const net = new THREE.Mesh(netGeo, netMat);
-        net.position.y = 0.85;
+        net.position.y = 1.0;
         tableGroup.add(net);
 
         scene.add(tableGroup);
@@ -577,7 +574,7 @@
         // Ball (High visibility yellow/orange)
         const ballGeo = new THREE.SphereGeometry(0.32, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ 
-            color: 0xfde047, // yellow-300
+            color: 0xfde047, // yellow-300 as requested
             roughness: 0.2,
             emissive: 0x444444
         });
@@ -673,11 +670,14 @@
         function updateStatusUI() {
             const statusEl = document.getElementById('gameStatusText');
             if (state.status === 'serve') {
-                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR SERVE" : (isAI ? "COM SERVE" : "WAITING");
-                statusEl.className = "mt-1 text-[9px] md:text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-900/20 border border-red-900/50 px-3 py-1 rounded";
+                statusEl.textContent = state.server === (isHost ? 'p1' : 'p2') ? "YOUR TURN TO SERVE" : (isAI ? "BOT IS SERVING" : "WAITING FOR OPPONENT");
+                statusEl.classList.replace('bg-pink-600', 'bg-slate-800');
+                statusEl.classList.replace('bg-cyan-600', 'bg-slate-800');
+                statusEl.classList.replace('bg-purple-600', 'bg-slate-800');
             } else if (state.status === 'rally') {
                 statusEl.textContent = `RALLY: ${rallyCount}`;
-                statusEl.className = "mt-1 text-[9px] md:text-[10px] font-bold text-gray-300 uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-1 rounded";
+                const colorClass = isHost ? 'bg-pink-600' : (isAI ? 'bg-purple-600' : 'bg-cyan-600');
+                statusEl.className = `mt-2 md:mt-4 px-3 md:px-5 py-1.5 md:py-2 ${colorClass} rounded-full text-[9px] md:text-xs font-bold text-white shadow-inner uppercase tracking-widest border border-transparent text-center`;
             }
         }
 
@@ -692,16 +692,16 @@
             b.vy -= GRAVITY; 
 
             // Table collision
-            if (b.y <= 0.57 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
+            if (b.y <= 0.65 && b.z > -TABLE_LENGTH/2 && b.z < TABLE_LENGTH/2 && b.x > -TABLE_WIDTH/2 && b.x < TABLE_WIDTH/2) {
                 if (b.vy < 0) {
                     b.vy = Math.abs(b.vy) * 0.82; 
-                    b.y = 0.57;
+                    b.y = 0.65;
                     state.tableHit = (b.z > 0) ? 'p1' : 'p2';
                 }
             }
 
-            // Net collision
-            if (Math.abs(b.z) < 0.6 && b.y < 2.0 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
+            // Fixed Net collision (prevents getting stuck)
+            if (Math.abs(b.z) < 0.6 && b.y < 2.2 && b.x > -TABLE_WIDTH/2 -1 && b.x < TABLE_WIDTH/2 + 1) {
                 if ((b.z > 0 && b.vz < 0) || (b.z < 0 && b.vz > 0)) {
                     b.vz = -b.vz * 0.3; 
                     b.z = b.z > 0 ? 0.65 : -0.65;
